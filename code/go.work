@@ -1,0 +1,7 @@
+go 1.21.6
+
+toolchain go1.21.6
+
+use ./core
+
+replace code/core v0.0.0 => ./core
