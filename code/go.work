@@ -6,10 +6,12 @@ use (
 	./application
 	./core
 	./helpers
+	./infrastructure
 )
 
 replace (
 	code/application v0.0.0 => ./application
 	code/core v0.0.0 => ./core
 	code/helpers v0.0.0 => ./helpers
+	code/infrastructure v0.0.0 => ./infrastructure
 )
