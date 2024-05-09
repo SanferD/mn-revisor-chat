@@ -2,6 +2,12 @@ go 1.21.6
 
 toolchain go1.21.6
 
-use ./core
+use (
+	./application
+	./core
+)
 
-replace code/core v0.0.0 => ./core
+replace (
+	code/application v0.0.0 => ./application
+	code/core v0.0.0 => ./core
+)
