@@ -5,9 +5,11 @@ toolchain go1.21.6
 use (
 	./application
 	./core
+	./helpers
 )
 
 replace (
 	code/application v0.0.0 => ./application
 	code/core v0.0.0 => ./core
+	code/helpers v0.0.0 => ./helpers
 )
