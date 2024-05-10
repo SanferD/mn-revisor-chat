@@ -4,6 +4,7 @@ toolchain go1.21.6
 
 use (
 	./application
+	./cmd
 	./core
 	./helpers
 	./infrastructure
