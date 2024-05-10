@@ -36,7 +36,8 @@ func GetSettings() (*Settings, error) {
 	viper.SetDefault("CONTEXT_TIMEOUT", defaultContextTimeout)
 	viper.SetDefault("LOG_TO_STDOUT", true)
 
-	if err := viper.ReadInConfig(); err != nil {
+	err = viper.ReadInConfig()
+	if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 		return nil, fmt.Errorf("error reading in config: %v", err)
 	}
 
@@ -56,8 +57,8 @@ func getSettingsConfigPath() (string, error) {
 	for filepath.Base(cwd) != codeFolder && cwd != "/" {
 		cwd = filepath.Dir(cwd)
 	}
-	if filepath.Base(cwd) != codeFolder {
-		return "", fmt.Errorf("'code' not found in initialCwd='%s'", initialCwd)
+	if filepath.Base(cwd) != "/" {
+		return "", nil
 	}
 	settingsPath := filepath.Join(cwd, "..")
 	return settingsPath, nil
