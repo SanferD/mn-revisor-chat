@@ -126,5 +126,14 @@ export class CrawlerStack extends cdk.Stack {
       enableFargateCapacityProviders: true, // use Fargate for capacity management
       vpc: props.vpc, // over VPC
     });
+
+    //// setup task definition
+    const crawlerTaskDefinition = new ecs.TaskDefinition(this, "crawler-task-definition", {
+      compatibility: ecs.Compatibility.FARGATE,
+      cpu: "512", // 0.5vCPU cpu
+      memoryMiB: "1024", // 1GB memory
+      family: `crawler-task-dfn-family-${props.nonce}`,
+      networkMode: ecs.NetworkMode.AWS_VPC, // only supported option for AWS Fargate
+    });
   }
 }
