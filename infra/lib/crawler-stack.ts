@@ -3,6 +3,7 @@ import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { KiB, TTL_ATTRIBUTE } from "./constants";
@@ -115,5 +116,15 @@ export class CrawlerStack extends cdk.Stack {
         resources: ["*"],
       })
     );
+
+    // setup ecs to run crawlers
+
+    //// setup crawler cluster
+    const crawlerCluster = new ecs.Cluster(this, "crawler-cluster", {
+      clusterName: `crawler-cluster-${props.nonce}`,
+      containerInsights: true, // enable container insights
+      enableFargateCapacityProviders: true, // use Fargate for capacity management
+      vpc: props.vpc, // over VPC
+    });
   }
 }
