@@ -1,11 +1,10 @@
 package settings
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 	"time"
-
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -23,43 +22,33 @@ type Settings struct {
 	RawPathPrefix  string        `mapstructure:"RAW_PATH_PREFIX"`
 }
 
-func GetSettings() (*Settings, error) {
-	configPath, err := getSettingsConfigPath()
-	if err != nil {
-		return nil, fmt.Errorf("error on getSettingsConfigPath: %v", err)
-	}
-	viper.AddConfigPath(configPath)
-	viper.SetConfigName("settings")
-	viper.SetConfigType("env")
+const emptySettings = `LOCAL_ENDPOINT=
+TABLE_1_ARN=
+URL_SQS_ARN=
+BUCKET_NAME=
+RAW_PATH_PREFIX=
+`
 
+func GetSettings() (*Settings, error) {
+	viper.SetConfigType("env")
 	viper.AutomaticEnv()
 	viper.SetDefault("CONTEXT_TIMEOUT", defaultContextTimeout)
 	viper.SetDefault("LOG_TO_STDOUT", true)
 
-	err = viper.ReadInConfig()
-	if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		return nil, fmt.Errorf("error reading in config: %v", err)
+	if err := viper.ReadConfig(bytes.NewBufferString(emptySettings)); err != nil {
+		return nil, fmt.Errorf("error on reading empty settings: %v", err)
 	}
 
 	var settings Settings
 	if err := viper.Unmarshal(&settings); err != nil {
 		return nil, fmt.Errorf("error unmarshalling settings: %v", err)
 	}
-	return &settings, nil
-}
 
-func getSettingsConfigPath() (string, error) {
-	initialCwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("error on os.Getwd: %v", err)
+	// convert empty LocalEndpoint to nil
+	if settings.LocalEndpoint != nil {
+		if len(strings.TrimSpace(*settings.LocalEndpoint)) == 0 {
+			settings.LocalEndpoint = nil
+		}
 	}
-	cwd := initialCwd
-	for filepath.Base(cwd) != codeFolder && cwd != "/" {
-		cwd = filepath.Dir(cwd)
-	}
-	if filepath.Base(cwd) != "/" {
-		return "", nil
-	}
-	settingsPath := filepath.Join(cwd, "..")
-	return settingsPath, nil
+	return &settings, nil
 }
