@@ -6,14 +6,15 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import { Construct } from "constructs";
 import { KiB, TTL_ATTRIBUTE } from "./constants";
 import { TempLogGroup } from "../constructs/temp-log-group";
 import * as helpers from "./helpers";
-import { IamResource } from "aws-cdk-lib/aws-appsync";
 
 const URL_SQS_NAME = "url-to-crawl";
 const TRIGGER_CRAWLER_NAME = "trigger_crawler";
+const CRAWLER_NAME = "crawler";
 
 export interface CrawlerStackProps extends cdk.StackProps {
   nonce: string;
@@ -151,5 +152,18 @@ export class CrawlerStack extends cdk.Stack {
         resources: ["*"],
       })
     );
+
+    ////// docker image asset
+    helpers.doMakeBuildEcs(CRAWLER_NAME);
+    const crawlerDockerImageAsset = new ecr_assets.DockerImageAsset(this, "crawler-docker-image-asset", {
+      directory: helpers.getCodeDirPath(),
+      buildArgs: {
+        BINARY_PATH: helpers.getBuildAssetPathRelativeToCodeDir(CRAWLER_NAME),
+      },
+      file: helpers.getCmdDockerfilePathRelativeToCodeDir(CRAWLER_NAME),
+    });
+
+    ////// crawler log group
+    const crawlerEcsLogGroup = new TempLogGroup(this, "crawler-ecs-log-group");
   }
 }
