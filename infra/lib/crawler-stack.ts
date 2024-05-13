@@ -1,3 +1,4 @@
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -19,6 +20,7 @@ export interface CrawlerStackProps extends cdk.StackProps {
   securityGroup: ec2.SecurityGroup;
   vpc: ec2.Vpc;
   privateIsolatedSubnets: ec2.SelectedSubnets;
+  crawlerBucket: s3.Bucket;
 }
 
 export class CrawlerStack extends cdk.Stack {
@@ -137,5 +139,17 @@ export class CrawlerStack extends cdk.Stack {
       family: `crawler-task-dfn-family-${props.nonce}`,
       networkMode: ecs.NetworkMode.AWS_VPC, // only supported option for AWS Fargate
     });
+
+    ////// configure crawler service permissions
+    this.urlSqs.grantConsumeMessages(crawlerTaskDefinition.taskRole);
+    this.seenUrlTable.grantReadWriteData(crawlerTaskDefinition.taskRole);
+    props.crawlerBucket.grantPut(crawlerTaskDefinition.taskRole);
+    crawlerTaskDefinition.addToTaskRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["sqs:ListQueues", "dynamodb:ListTables"],
+        effect: iam.Effect.ALLOW,
+        resources: ["*"],
+      })
+    );
   }
 }
