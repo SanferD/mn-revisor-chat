@@ -87,7 +87,7 @@ export class CrawlerStack extends cdk.Stack {
     helpers.doMakeBuildLambda(TRIGGER_CRAWLER_NAME);
     const triggerCrawlerLambda = new lambda.Function(this, "trigger-crawler", {
       functionName: `trigger-crawler-${props.nonce}`,
-      code: lambda.Code.fromAsset(helpers.getAssetPath(TRIGGER_CRAWLER_NAME)), // GoLang code
+      code: lambda.Code.fromAsset(helpers.getLambdaBuildAssetPath(TRIGGER_CRAWLER_NAME)), // GoLang code
       handler: "HandleRequests", // handler function. Can be named anything, happens to be "Handler"
       runtime: lambda.Runtime.PROVIDED_AL2023, // recommended
       allowPublicSubnet: false, // network isolation => private subnets only
@@ -128,6 +128,8 @@ export class CrawlerStack extends cdk.Stack {
     });
 
     //// setup task definition
+
+    ////// task definition
     const crawlerTaskDefinition = new ecs.TaskDefinition(this, "crawler-task-definition", {
       compatibility: ecs.Compatibility.FARGATE,
       cpu: "512", // 0.5vCPU cpu
