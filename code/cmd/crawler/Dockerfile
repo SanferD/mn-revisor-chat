@@ -1,0 +1,4 @@
+FROM scratch
+ARG BINARY_PATH
+COPY ${BINARY_PATH} /
+CMD ["/crawler"]
