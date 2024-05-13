@@ -84,7 +84,7 @@ export class CrawlerStack extends cdk.Stack {
     const triggerCrawlerLambdaLogGroup = new TempLogGroup(this, "trigger-crawler-log-group");
 
     //// trigger-crawler Lambda
-    helpers.codeBuild(TRIGGER_CRAWLER_NAME);
+    helpers.doMakeBuildLambda(TRIGGER_CRAWLER_NAME);
     const triggerCrawlerLambda = new lambda.Function(this, "trigger-crawler", {
       functionName: `trigger-crawler-${props.nonce}`,
       code: lambda.Code.fromAsset(helpers.getAssetPath(TRIGGER_CRAWLER_NAME)), // GoLang code
