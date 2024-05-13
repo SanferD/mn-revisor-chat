@@ -27,7 +27,16 @@ function doMake(target: string, cmd?: string) {
     throw new Error(`cmd '${cmd} is not a valid command`);
   }
   const cmdArg = cmd === null ? "" : ` cmd=${cmd}`;
-  execSync(`cd ${codeDir} && make ${target}${cmdArg}`);
+  const makeStr = `make ${target}${cmdArg}`;
+  execSync(`cd ${codeDir} && ${makeStr}`);
+}
+
+export function getBuildAssetPathRelativeToCodeDir(kind: string): string {
+  return `.build/${kind}/${kind}`;
+}
+
+export function getCmdDockerfilePathRelativeToCodeDir(dir: string): string {
+  return `./cmd/${dir}/Dockerfile`;
 }
 
 export function getCmdDir(subdir: string): string {
@@ -44,12 +53,17 @@ export function getLambdaBuildAssetPath(target: string): string {
 }
 
 export function getBuildAssetPath(...targets: string[]): string {
-  let rootPath: string = getRepositoryDirectory();
-  let buildPath: string = path.join(rootPath, "code", ".build");
+  let buildPath: string = path.join(getCodeDirPath(), ".build");
   for (let i = 0; i < targets.length; i++) {
     buildPath = path.join(buildPath, targets[i]);
   }
   return buildPath;
+}
+
+export function getCodeDirPath(): string {
+  let rootPath: string = getRepositoryDirectory();
+  let codeDirPath: string = path.join(rootPath, "code");
+  return codeDirPath;
 }
 
 export function getRepositoryDirectory(): string {
