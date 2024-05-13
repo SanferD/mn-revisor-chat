@@ -30,10 +30,26 @@ function doMake(target: string, cmd?: string) {
   execSync(`cd ${codeDir} && make ${target}${cmdArg}`);
 }
 
-export function getAssetPath(target: string) {
-  let rootPath = getRepositoryDirectory();
-  let buildPath = path.join(rootPath, "code", ".build");
-  return path.join(buildPath, target, `${target}.zip`);
+export function getCmdDir(subdir: string): string {
+  const repoDir = getRepositoryDirectory();
+  return path.join(repoDir, "code", "cmd", subdir);
+}
+
+export function getEcsBuildAssetPath(target: string): string {
+  return getBuildAssetPath(target, target);
+}
+
+export function getLambdaBuildAssetPath(target: string): string {
+  return getBuildAssetPath(target, `${target}.zip`);
+}
+
+export function getBuildAssetPath(...targets: string[]): string {
+  let rootPath: string = getRepositoryDirectory();
+  let buildPath: string = path.join(rootPath, "code", ".build");
+  for (let i = 0; i < targets.length; i++) {
+    buildPath = path.join(buildPath, targets[i]);
+  }
+  return buildPath;
 }
 
 export function getRepositoryDirectory(): string {
