@@ -2,24 +2,32 @@ import * as constants from "./constants";
 import * as path from "path";
 import { execSync } from "child_process";
 
-const validMakeTargets = ["clean", "build", "build-trigger_crawler", "build-crawler"];
+const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
+const validCmds = ["crawler", "trigger_crawler"];
 
-export function codeClean() {
-  makeCode("clean");
+export function doMakeClean() {
+  doMake("clean");
 }
 
-export function codeBuild(name?: string) {
-  let target = name === null ? "build" : `build-${name}`;
-  makeCode(target);
+export function doMakeBuildLambda(cmd: string) {
+  doMake("build-lambda", cmd);
 }
 
-export function makeCode(target: string) {
+export function doMakeBuildEcs(cmd: string) {
+  doMake("build-ecs", cmd);
+}
+
+function doMake(target: string, cmd?: string) {
   if (!validMakeTargets.includes(target)) {
     throw new Error(`target '${target}' is not recognized`);
   }
   const rootDir = getRepositoryDirectory();
   const codeDir = path.join(rootDir, "code");
-  execSync(`cd ${codeDir} && make ${target}`);
+  if (cmd !== null && !validCmds.includes(cmd!)) {
+    throw new Error(`cmd '${cmd} is not a valid command`);
+  }
+  const cmdArg = cmd === null ? "" : ` cmd=${cmd}`;
+  execSync(`cd ${codeDir} && make ${target}${cmdArg}`);
 }
 
 export function getAssetPath(target: string) {
