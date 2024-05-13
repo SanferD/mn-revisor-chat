@@ -183,5 +183,20 @@ export class CrawlerStack extends cdk.Stack {
         streamPrefix: CRAWLER_STREAM_PREFIX,
       }),
     });
+
+    //// setup crawler fargate service
+    const crawlerFargateService = new ecs.FargateService(this, "crawler-fargate-service", {
+      cluster: crawlerCluster,
+      taskDefinition: crawlerTaskDefinition,
+      assignPublicIp: false, // network isolation => tasks over private subnets only
+      desiredCount: 0, // start out with 0 tasks and autoscale out as tasks populate the sqs queue
+      maxHealthyPercent: 100, // no more than 100% so as to be polite to mn-revisor-chat
+      minHealthyPercent: 0, // ok if no tasks are running for a brief period during deployment
+      circuitBreaker: { enable: true, rollback: true }, // rollback on failure
+      deploymentController: { type: ecs.DeploymentControllerType.ECS }, // i.e. drop some tasks and replace with newer versions
+      securityGroups: [props.securityGroup],
+      serviceName: `crawler-fargate-service-${props.nonce}`,
+      vpcSubnets: props.privateWithEgressSubnets,
+    });
   }
 }
