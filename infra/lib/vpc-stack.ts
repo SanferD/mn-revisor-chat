@@ -68,5 +68,11 @@ export class VpcStack extends cdk.Stack {
       privateDnsEnabled: true,
       subnets: this.privateIsolatedSubnets,
     });
+
+    //// vpc endpoint to S3
+    this.vpc.addGatewayEndpoint("vpc-endpoint-s3", {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+      subnets: [this.privateIsolatedSubnets],
+    });
   }
 }
