@@ -15,12 +15,14 @@ import * as helpers from "./helpers";
 const URL_SQS_NAME = "url-to-crawl";
 const TRIGGER_CRAWLER_NAME = "trigger_crawler";
 const CRAWLER_NAME = "crawler";
+const CRAWLER_STREAM_PREFIX = "crawler-";
 
 export interface CrawlerStackProps extends cdk.StackProps {
   nonce: string;
   securityGroup: ec2.SecurityGroup;
   vpc: ec2.Vpc;
   privateIsolatedSubnets: ec2.SelectedSubnets;
+  privateWithEgressSubnets: ec2.SelectedSubnets;
   crawlerBucket: s3.Bucket;
 }
 
@@ -165,5 +167,21 @@ export class CrawlerStack extends cdk.Stack {
 
     ////// crawler log group
     const crawlerEcsLogGroup = new TempLogGroup(this, "crawler-ecs-log-group");
+
+    ////// setup container definition that uses docker image asset and task definition
+    new ecs.ContainerDefinition(this, "crawler-container-definition", {
+      containerName: `crawler-container-definition-${props.nonce}`,
+      image: ecs.ContainerImage.fromDockerImageAsset(crawlerDockerImageAsset),
+      taskDefinition: crawlerTaskDefinition,
+      environment: {
+        BUCKET_NAME: props.crawlerBucket.bucketName,
+        TABLE_1_ARN: this.seenUrlTable.tableArn,
+        URL_SQS_ARN: this.urlSqs.queueArn,
+      },
+      logging: new ecs.AwsLogDriver({
+        logGroup: crawlerEcsLogGroup,
+        streamPrefix: CRAWLER_STREAM_PREFIX,
+      }),
+    });
   }
 }
