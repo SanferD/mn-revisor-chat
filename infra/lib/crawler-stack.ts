@@ -11,6 +11,7 @@ import { Construct } from "constructs";
 import { KiB, TTL_ATTRIBUTE } from "./constants";
 import { TempLogGroup } from "../constructs/temp-log-group";
 import * as helpers from "./helpers";
+import { RAW_OBJECT_PREFIX } from "./s3-stack";
 
 const URL_SQS_NAME = "url-to-crawl";
 const TRIGGER_CRAWLER_NAME = "trigger_crawler";
@@ -175,6 +176,7 @@ export class CrawlerStack extends cdk.Stack {
       taskDefinition: crawlerTaskDefinition,
       environment: {
         BUCKET_NAME: props.crawlerBucket.bucketName,
+        RAW_PATH_PREFIX: RAW_OBJECT_PREFIX,
         TABLE_1_ARN: this.seenUrlTable.tableArn,
         URL_SQS_ARN: this.urlSqs.queueArn,
       },
