@@ -3,13 +3,14 @@ package settings
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
-const codeFolder = "code"
+const relativeSettingsFilePath = "../../../settings.env"
 const defaultContextTimeout = 31 * time.Second
 
 type Settings struct {
@@ -35,16 +36,31 @@ func GetSettings() (*Settings, error) {
 	viper.SetDefault("CONTEXT_TIMEOUT", defaultContextTimeout)
 	viper.SetDefault("LOG_TO_STDOUT", true)
 
+	// load settings
+
+	//// read empty settings string to "prime" it for reading from environment (otherwise doesn't work..)
 	if err := viper.ReadConfig(bytes.NewBufferString(emptySettings)); err != nil {
 		return nil, fmt.Errorf("error on reading empty settings: %v", err)
 	}
 
+	//// Check if settings file exists and load it
+	if _, err := os.Stat(relativeSettingsFilePath); err == nil {
+		// Use a relative path for the settings file based on the executable location
+		viper.SetConfigFile(relativeSettingsFilePath)
+		if err := viper.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("error loading settings file: %v", err)
+		}
+	}
+
+	//// load settings (environment precedent over settings file)
 	var settings Settings
 	if err := viper.Unmarshal(&settings); err != nil {
 		return nil, fmt.Errorf("error unmarshalling settings: %v", err)
 	}
 
-	// convert empty LocalEndpoint to nil
+	// sanitize settings
+
+	//// convert empty LocalEndpoint to nil
 	if settings.LocalEndpoint != nil {
 		if len(strings.TrimSpace(*settings.LocalEndpoint)) == 0 {
 			settings.LocalEndpoint = nil
