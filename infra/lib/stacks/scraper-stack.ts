@@ -4,7 +4,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import { Construct } from "constructs";
 import { DualQueue } from "../constructs/dual-sqs";
-import { RAW_OBJECT_PREFIX } from "./constants";
+import { RAW_OBJECT_PREFIX } from "../constants";
 
 const RAW_EVENTS_QUEUE_NAME = "raw-events-queue";
 

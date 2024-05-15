@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import * as conf from "../lib/config";
-import { S3Stack } from "../lib/s3-stack";
-import { CrawlerStack } from "../lib/crawler-stack";
-import { VpcStack } from "../lib/vpc-stack";
-import { ScraperStack } from "../lib/scraper-stack";
+import { S3Stack } from "../lib/stacks/s3-stack";
+import { CrawlerStack } from "../lib/stacks/crawler-stack";
+import { VpcStack } from "../lib/stacks/vpc-stack";
+import { ScraperStack } from "../lib/stacks/scraper-stack";
 
 function main(app: cdk.App, config: conf.Config) {
   console.log("config: ", config);
