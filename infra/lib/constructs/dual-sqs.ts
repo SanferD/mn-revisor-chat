@@ -1,6 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import * as sqs from "aws-cdk-lib/aws-sqs";
-import { KiB } from "../lib/constants";
+import { KiB } from "../constants";
 import { Construct } from "constructs";
 
 export interface DualQueueProps {

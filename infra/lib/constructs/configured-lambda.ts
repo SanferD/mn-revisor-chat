@@ -3,7 +3,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { TempLogGroup } from "./temp-log-group";
-import * as helpers from "../lib/helpers";
+import * as helpers from "../helpers";
 
 const HANDLE_REQUESTS = "HandleRequests";
 
