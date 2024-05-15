@@ -6,13 +6,12 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as helpers from "./helpers";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as sqs from "aws-cdk-lib/aws-sqs";
-import { RAW_OBJECT_PREFIX } from "./s3-stack";
 import { Construct } from "constructs";
-import { KiB, TTL_ATTRIBUTE } from "./constants";
+import { RAW_OBJECT_PREFIX, TTL_ATTRIBUTE } from "./constants";
 import { TempLogGroup } from "../constructs/temp-log-group";
+import { DualQueue } from "../constructs/dual-sqs";
+import { ConfiguredFunction } from "../constructs/configured-lambda";
 
 const URL_SQS_NAME = "url-to-crawl";
 const TRIGGER_CRAWLER_NAME = "trigger_crawler";
@@ -25,11 +24,11 @@ export interface CrawlerStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
   privateIsolatedSubnets: ec2.SelectedSubnets;
   privateWithEgressSubnets: ec2.SelectedSubnets;
-  crawlerBucket: s3.Bucket;
+  mainBucket: s3.Bucket;
 }
 
 export class CrawlerStack extends cdk.Stack {
-  readonly urlSqs: sqs.Queue;
+  readonly dualQueue: DualQueue;
   readonly seenUrlTable: dynamodb.TableV2;
 
   constructor(scope: Construct, id: string, props: CrawlerStackProps) {
@@ -53,70 +52,29 @@ export class CrawlerStack extends cdk.Stack {
     });
 
     // setup SQS infrastructure
-    //// create dead letter queue
-    const urlSqsDlq = new sqs.Queue(this, "url-sqs-dlq", {
-      queueName: `${URL_SQS_NAME}-dlq-${props.nonce}`,
-      retentionPeriod: cdk.Duration.days(14), // retain the message for 2 weeks
-      visibilityTimeout: cdk.Duration.minutes(2), // set the visibility for at most 2 minutes
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // destroy the resources when the stack deletes
-      redriveAllowPolicy: {
-        // TODO: figure out how to set this to BY_QUEUE
-        redrivePermission: sqs.RedrivePermission.ALLOW_ALL,
-      },
-    });
-
-    //// create sqs url-queue
-    this.urlSqs = new sqs.Queue(this, "url-sqs", {
-      queueName: `${URL_SQS_NAME}-src-${props.nonce}`,
-      encryption: sqs.QueueEncryption.SQS_MANAGED, // encryption at rest (phew, sqs will manage the data encryption keys)
-      dataKeyReuse: cdk.Duration.hours(24), // set sqs key reuse period to 1 day to minimize KMS API calls and keep costs low
-      enforceSSL: true, // encryption in transit
-      maxMessageSizeBytes: 10 * KiB, // 1 KB should suffice, 10 KB just in case
-      visibilityTimeout: cdk.Duration.minutes(3), // task should take 1 minute to process a request, 3 minutes just-in-case
-      retentionPeriod: cdk.Duration.days(7), // 1 week to debug an error
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // delete SQS queue on stack deletion for easy cleanup of demo
-      redriveAllowPolicy: {
-        // source queue cannot be used as DLQ
-        redrivePermission: sqs.RedrivePermission.DENY_ALL,
-      },
-      deadLetterQueue: {
-        maxReceiveCount: 2, // retry twice before moving to DLQ to accommodate transient errors
-        queue: urlSqsDlq, // the DLQ
-      },
+    this.dualQueue = new DualQueue(this, URL_SQS_NAME, {
+      name: URL_SQS_NAME,
+      nonce: props.nonce,
     });
 
     // setup Lambda to trigger crawler
-
-    //// trigger-crawler log group
-    const triggerCrawlerLambdaLogGroup = new TempLogGroup(this, "trigger-crawler-log-group");
-
-    //// trigger-crawler Lambda
-    helpers.doMakeBuildLambda(TRIGGER_CRAWLER_NAME);
-    const triggerCrawlerLambda = new lambda.Function(this, "trigger-crawler", {
-      functionName: `trigger-crawler-${props.nonce}`,
-      code: lambda.Code.fromAsset(helpers.getLambdaBuildAssetPath(TRIGGER_CRAWLER_NAME)), // GoLang code
-      handler: "HandleRequests", // handler function. Can be named anything, happens to be "Handler"
-      runtime: lambda.Runtime.PROVIDED_AL2023, // recommended
-      allowPublicSubnet: false, // network isolation => private subnets only
+    const configuredFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_NAME, {
       environment: {
-        URL_SQS_ARN: this.urlSqs.queueArn, // sqs arn over environment variables for easy dependency management
-        TABLE_1_ARN: this.seenUrlTable.tableArn, // ddb arn over environment variables for easy dependency management
+        URL_SQS_ARN: this.dualQueue.src.queueArn,
+        TABLE_1_ARN: this.seenUrlTable.tableArn,
       },
-      logGroup: triggerCrawlerLambdaLogGroup, // custom log group to simplify stack deletion
-      memorySize: 512, // 512 MB
-      reservedConcurrentExecutions: 1, // 1 concurrent execution since this is manually triggered
-      retryAttempts: 0, // don't retry, error => failed execution
-      securityGroups: [props.securityGroup],
-      timeout: cdk.Duration.minutes(7), // fast running Lambda (2-3 minutes), 7 minutes just incase
-      vpc: props.vpc, // network isolation => within VPC
-      vpcSubnets: props.privateIsolatedSubnets, // network isolatoin => private isolated subnets only
+      name: TRIGGER_CRAWLER_NAME,
+      nonce: props.nonce,
+      securityGroup: props.securityGroup,
+      vpc: props.vpc,
+      vpcSubnets: props.privateIsolatedSubnets,
     });
 
     //// configure trigger-crawler permissions
-    this.urlSqs.grantPurge(triggerCrawlerLambda);
-    this.urlSqs.grantSendMessages(triggerCrawlerLambda);
-    this.seenUrlTable.grantReadWriteData(triggerCrawlerLambda);
-    triggerCrawlerLambda.addToRolePolicy(
+    this.dualQueue.src.grantPurge(configuredFunction);
+    this.dualQueue.src.grantSendMessages(configuredFunction);
+    this.seenUrlTable.grantReadWriteData(configuredFunction);
+    configuredFunction.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["sqs:ListQueues", "dynamodb:ListTables"],
         effect: iam.Effect.ALLOW,
@@ -146,9 +104,9 @@ export class CrawlerStack extends cdk.Stack {
     });
 
     ////// configure crawler service permissions
-    this.urlSqs.grantConsumeMessages(crawlerTaskDefinition.taskRole);
+    this.dualQueue.src.grantConsumeMessages(crawlerTaskDefinition.taskRole);
     this.seenUrlTable.grantReadWriteData(crawlerTaskDefinition.taskRole);
-    props.crawlerBucket.grantPut(crawlerTaskDefinition.taskRole);
+    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole);
     crawlerTaskDefinition.addToTaskRolePolicy(
       new iam.PolicyStatement({
         actions: ["sqs:ListQueues", "dynamodb:ListTables"],
@@ -176,10 +134,10 @@ export class CrawlerStack extends cdk.Stack {
       image: ecs.ContainerImage.fromDockerImageAsset(crawlerDockerImageAsset),
       taskDefinition: crawlerTaskDefinition,
       environment: {
-        BUCKET_NAME: props.crawlerBucket.bucketName,
+        BUCKET_NAME: props.mainBucket.bucketName,
         RAW_PATH_PREFIX: RAW_OBJECT_PREFIX,
         TABLE_1_ARN: this.seenUrlTable.tableArn,
-        URL_SQS_ARN: this.urlSqs.queueArn,
+        URL_SQS_ARN: this.dualQueue.src.queueArn,
       },
       logging: new ecs.AwsLogDriver({
         logGroup: crawlerEcsLogGroup,

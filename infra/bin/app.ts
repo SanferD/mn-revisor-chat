@@ -14,7 +14,7 @@ function main(app: cdk.App, config: conf.Config) {
   const vpcStack = new VpcStack(app, i("vpc-stack"), { nonce: config.nonce, azCount: config.azCount });
 
   const crawlerStack = new CrawlerStack(app, i("crawler-stack"), {
-    crawlerBucket: s3Stack.crawlerBucket,
+    mainBucket: s3Stack.mainBucket,
     nonce: config.nonce,
     privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
     privateWithEgressSubnets: vpcStack.privateWithEgressSubnets,
