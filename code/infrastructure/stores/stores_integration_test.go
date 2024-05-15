@@ -60,11 +60,25 @@ func TestS3Helper(t *testing.T) {
 	s3Helper, err := InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	assert.NoError(t, err, "error on InitializeS3Helper: %v", err)
 
-	t.Run("test PutTestFile", func(t *testing.T) {
+	t.Run("test PutTextFile, GetTextFile, DeleteTextFile", func(t *testing.T) {
 		fileName := "my-file.txt"
 		fileContents := "some test contents."
 		body := strings.NewReader(fileContents)
+
+		// put returns no errors
 		err := s3Helper.PutTextFile(ctx, fileName, body)
 		assert.NoError(t, err, "error on PutTextFile with fileName=%s: %v", fileName, err)
+
+		// get returns the file contents
+		foundContents, err := s3Helper.GetTextFile(ctx, fileName)
+		assert.NoError(t, err, "error no get text file with fileName=%s: %v", fileName, err)
+		assert.Equal(t, fileContents, foundContents, "get text file contents are not the same.")
+
+		// delete followed by get confirms that the file is not found
+		err = s3Helper.DeleteTextFile(ctx, fileName)
+		assert.NoError(t, err, "error on delete text file with fileName=%s: %v", fileName, err)
+		_, err = s3Helper.GetTextFile(ctx, fileName)
+		assert.Error(t, err, "get text file was supposed to receive an error after deletion, fileName=%s", fileName)
 	})
+
 }
