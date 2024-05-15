@@ -1,3 +1,4 @@
+import * as appscaling from "aws-cdk-lib/aws-applicationautoscaling";
 import * as cdk from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -158,6 +159,45 @@ export class CrawlerStack extends cdk.Stack {
       securityGroups: [props.securityGroup],
       serviceName: `crawler-fargate-service-${props.nonce}`,
       vpcSubnets: props.privateWithEgressSubnets,
+    });
+
+    //// setup crawler fargate service autoscale
+    const crawlerScalableTaskCount = crawlerFargateService.autoScaleTaskCount({
+      minCapacity: 0,
+      maxCapacity: 6, // number of tasks <= 6 for politeness (6 tasks @ 3 RPS/task = 2 RPS)
+    });
+    const backlogPerTaskMetric = new cloudwatch.MathExpression({
+      expression: "FILL(sqs_messages_count, 0) / (   IF(FILL(num_tasks, 0)==0, 1, num_tasks)   )",
+      usingMetrics: {
+        sqs_messages_count: new cloudwatch.Metric({
+          namespace: "AWS/SQS",
+          metricName: "ApproximateNumberOfMessagesVisible",
+          dimensionsMap: { QueueName: this.dualQueue.src.queueName },
+          statistic: "average",
+          period: cdk.Duration.minutes(1),
+        }),
+        num_tasks: new cloudwatch.Metric({
+          namespace: "ECS/ContainerInsights",
+          metricName: "RunningTaskCount",
+          dimensionsMap: {
+            ClusterName: crawlerCluster.clusterName,
+            ServiceName: crawlerFargateService.serviceName,
+          },
+          statistic: "average",
+          period: cdk.Duration.minutes(1),
+        }),
+      },
+      label: "Backlog per Task",
+    });
+
+    crawlerScalableTaskCount.scaleOnMetric("crawler-scalable-metric", {
+      metric: backlogPerTaskMetric, // x >= 0 (always positive)
+      scalingSteps: [
+        { lower: 0, upper: 1, change: -1 }, // x == 0; then -1
+        { lower: 1, change: +1 }, // 1 <= x ; then +1
+      ],
+      adjustmentType: appscaling.AdjustmentType.CHANGE_IN_CAPACITY,
+      cooldown: cdk.Duration.minutes(5), // 4s/url/task @ 5mins*60s => >=75 urls/task before rechecking
     });
   }
 }
