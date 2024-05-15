@@ -29,7 +29,7 @@ func TriggerCrawler(ctx context.Context, urlQueue core.URLQueue, seenURLStore co
 	return nil
 }
 
-func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenURLStore, dataStore core.DataStore, webClient core.WebClient, interruptWatcher core.InterruptWatcher, logger core.Logger) error {
+func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenURLStore, rawDataStore core.RawDataStore, webClient core.WebClient, interruptWatcher core.InterruptWatcher, logger core.Logger) error {
 	for !interruptWatcher.IsInterrupted() {
 		var err error
 
@@ -81,7 +81,7 @@ func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenUR
 		// save web page to store
 		logger.Info("saving HTML for url='%s'", url)
 		fileName := getURLFileName(url)
-		if err = dataStore.PutTextFile(ctx, fileName, htmlPageReader); err != nil {
+		if err = rawDataStore.PutTextFile(ctx, fileName, htmlPageReader); err != nil {
 			logger.Error("error on PutTextFile for url='%s': %v", url, err)
 			continue
 		}

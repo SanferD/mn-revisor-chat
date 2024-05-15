@@ -50,8 +50,10 @@ type SeenURLStore interface {
 	DeleteAll(context.Context) error
 }
 
-type DataStore interface {
+type RawDataStore interface {
+	GetTextFile(context.Context, string) (string, error)
 	PutTextFile(context.Context, string, io.Reader) error
+	DeleteTextFile(context.Context, string) error
 }
 
 type WebClient interface {

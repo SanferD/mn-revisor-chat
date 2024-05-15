@@ -16,7 +16,7 @@ import (
 var (
 	urlQueue     core.URLQueue
 	logger       core.Logger
-	rawDataStore core.DataStore
+	rawDataStore core.RawDataStore
 	webClient    core.WebClient
 )
 
