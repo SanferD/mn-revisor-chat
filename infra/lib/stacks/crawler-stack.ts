@@ -5,14 +5,14 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import * as helpers from "../helpers";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { RAW_OBJECT_PREFIX, TTL_ATTRIBUTE } from "../constants";
 import { TempLogGroup } from "../constructs/temp-log-group";
 import { DualQueue } from "../constructs/dual-sqs";
 import { ConfiguredFunction } from "../constructs/configured-lambda";
+import { RAW_OBJECT_PREFIX, TTL_ATTRIBUTE } from "../constants";
+import * as helpers from "../helpers";
 
 const URL_SQS_NAME = "url-to-crawl";
 const TRIGGER_CRAWLER_NAME = "trigger_crawler";
