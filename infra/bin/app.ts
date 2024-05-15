@@ -4,6 +4,7 @@ import * as conf from "../lib/config";
 import { S3Stack } from "../lib/s3-stack";
 import { CrawlerStack } from "../lib/crawler-stack";
 import { VpcStack } from "../lib/vpc-stack";
+import { ScraperStack } from "../lib/scraper-stack";
 
 function main(app: cdk.App, config: conf.Config) {
   console.log("config: ", config);
@@ -20,6 +21,11 @@ function main(app: cdk.App, config: conf.Config) {
     privateWithEgressSubnets: vpcStack.privateWithEgressSubnets,
     securityGroup: vpcStack.securityGroup,
     vpc: vpcStack.vpc,
+  });
+
+  const scraperStack = new ScraperStack(app, i("scraper-stack"), {
+    mainBucket: s3Stack.mainBucket,
+    nonce: config.nonce,
   });
 }
 
