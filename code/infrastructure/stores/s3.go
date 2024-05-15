@@ -13,13 +13,13 @@ import (
 )
 
 type S3Helper struct {
-	client     *s3.Client
-	bucketName string
-	pathPrefix string
-	timeout    time.Duration
+	client        *s3.Client
+	bucketName    string
+	rawPathPrefix string
+	timeout       time.Duration
 }
 
-func InitializeS3Helper(ctx context.Context, bucketName string, pathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
+func InitializeS3Helper(ctx context.Context, bucketName string, rawPathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -34,16 +34,20 @@ func InitializeS3Helper(ctx context.Context, bucketName string, pathPrefix strin
 			}
 		}
 	})
-	return &S3Helper{client: client, bucketName: bucketName, pathPrefix: pathPrefix, timeout: timeout}, nil
+	return &S3Helper{client: client, bucketName: bucketName, rawPathPrefix: rawPathPrefix, timeout: timeout}, nil
 }
 
 func (s3Helper *S3Helper) PutTextFile(ctx context.Context, fileName string, body io.Reader) error {
 	ctx, cancel := context.WithTimeout(ctx, s3Helper.timeout)
 	defer cancel()
-	key := s3Helper.pathPrefix + "/" + fileName
+	key := s3Helper.getRawObjectKey(fileName)
 	putObjectInput := &s3.PutObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key), Body: body}
 	if _, err := s3Helper.client.PutObject(ctx, putObjectInput); err != nil {
 		return fmt.Errorf("error on PutObject: %v", err)
 	}
 	return nil
+}
+
+func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
+	return s3Helper.rawPathPrefix + "/" + fileName
 }
