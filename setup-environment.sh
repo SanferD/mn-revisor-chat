@@ -1,5 +1,27 @@
 #! /bin/bash
 
+# Check if the --overwrite-settings flag is set
+OVERWRITE_SETTINGS=false
+for arg in "$@"; do
+    if [ "$arg" == "--overwrite-settings" ]; then
+        OVERWRITE_SETTINGS=true
+    fi
+done
+
+# Function to write settings to settings.env
+write_settings() {
+    echo "Writing settings to settings.env..."
+    cat <<EOL > ./settings.env
+BUCKET_NAME="$BUCKET_NAME"
+LOCAL_ENDPOINT="http://localhost:4566/"
+RAW_PATH_PREFIX="raw"
+CHUNK_PATH_PREFIX="chunk"
+TABLE_1_ARN="$TABLE_1_ARN"
+URL_SQS_ARN="$QUEUE_ARN"
+EOL
+    echo "Settings written to ./settings.env"
+}
+
 QUEUE_NAME=url-to-crawl
 TABLE_NAME=table-1
 
@@ -81,3 +103,18 @@ echo "RAW_PATH_PREFIX=\"raw\""
 echo "CHUNK_PATH_PREFIX=\"chunk\""
 echo "TABLE_1_ARN=\"$TABLE_1_ARN\""
 echo "URL_SQS_ARN=\"$QUEUE_ARN\""
+
+
+if [ "$OVERWRITE_SETTINGS" = true ]; then
+    write_settings
+else
+    # prompt the user if they would like to write current settings to settings.env
+    echo
+    read -p "Would you like to write the current settings to settings.env? (y/n) " REPLY
+    echo
+    if [[ "$REPLY" == "y" || "$REPLY" == "Y" ]]; then
+        write_settings
+    else
+        echo "Settings not written to ./settings.env"
+    fi
+fi
