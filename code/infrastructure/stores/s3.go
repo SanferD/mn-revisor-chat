@@ -1,10 +1,14 @@
 package stores
 
 import (
+	"bytes"
+	"code/core"
 	"code/helpers"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -13,13 +17,14 @@ import (
 )
 
 type S3Helper struct {
-	client        *s3.Client
-	bucketName    string
-	rawPathPrefix string
-	timeout       time.Duration
+	client          *s3.Client
+	bucketName      string
+	rawPathPrefix   string
+	chunkPathPrefix string
+	timeout         time.Duration
 }
 
-func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
+func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix, chunkPathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -34,7 +39,43 @@ func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix string, t
 			}
 		}
 	})
-	return &S3Helper{client: client, bucketName: bucketName, rawPathPrefix: rawPathPrefix, timeout: timeout}, nil
+	return &S3Helper{client: client, bucketName: bucketName, rawPathPrefix: rawPathPrefix, chunkPathPrefix: chunkPathPrefix, timeout: timeout}, nil
+}
+
+func (s3Helper *S3Helper) PutStatute(ctx context.Context, statute core.Statute) error {
+	fileName := s3Helper.statuteToFileName(statute)
+	statuteJsonBytes, err := json.Marshal(statute)
+	if err != nil {
+		return fmt.Errorf("error when converting statute to json: %v", err)
+	}
+	body := bytes.NewReader(statuteJsonBytes)
+	key := s3Helper.getChunkObjectKey(fileName)
+	return s3Helper.putFile(ctx, key, body)
+}
+
+func (s3Helper *S3Helper) GetStatute(ctx context.Context, key string) (core.Statute, error) {
+	prefix := s3Helper.chunkPathPrefix + "/"
+	if !strings.HasPrefix(key, prefix) {
+		return core.Statute{}, fmt.Errorf("key doesn't have the correct prefix, prefix='%s', key='%s'", prefix, key)
+	}
+	contents, err := s3Helper.getObject(ctx, key)
+	if err != nil {
+		return core.Statute{}, fmt.Errorf("error on reading object from s3: %v", err)
+	}
+	var statute core.Statute
+	if err := json.Unmarshal([]byte(contents), &statute); err != nil {
+		return core.Statute{}, fmt.Errorf("error on unmarshalling json object: %v", err)
+	}
+	return statute, nil
+}
+
+func (s3Helper *S3Helper) DeleteStatute(ctx context.Context, statute core.Statute) error {
+	fileName := s3Helper.statuteToFileName(statute)
+	key := s3Helper.getChunkObjectKey(fileName)
+	if err := s3Helper.deleteObject(ctx, key); err != nil {
+		return fmt.Errorf("error on deleting object: %v", err)
+	}
+	return nil
 }
 
 func (s3Helper *S3Helper) PutTextFile(ctx context.Context, fileName string, body io.Reader) error {
@@ -89,6 +130,14 @@ func (s3Helper *S3Helper) deleteObject(ctx context.Context, key string) error {
 
 }
 
+func (s3Helper *S3Helper) statuteToFileName(statute core.Statute) string {
+	return statute.Chapter + "." + statute.Section + " " + statute.Title
+}
+
 func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
 	return s3Helper.rawPathPrefix + "/" + fileName
+}
+
+func (s3Helper *S3Helper) getChunkObjectKey(fileName string) string {
+	return s3Helper.chunkPathPrefix + "/" + fileName
 }

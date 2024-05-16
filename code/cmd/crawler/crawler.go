@@ -45,7 +45,7 @@ func Crawl() error {
 	if urlQueue, err = queues.InitializeURLSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint); err != nil {
 		logger.Fatal("error initializing url queue: %v", err)
 	}
-	rawDataStore, err := stores.InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	rawDataStore, err := stores.InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	if err != nil {
 		logger.Fatal("error initializing s3: %v", err)
 	}

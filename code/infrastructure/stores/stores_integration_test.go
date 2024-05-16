@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"code/core"
 	"code/infrastructure/settings"
 	"context"
 	"strings"
@@ -8,6 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+var testStatute = core.Statute{
+	Chapter: "1a", Section: "34", Title: "not a real statute",
+	Subdivisions: []core.Subdivision{
+		{Number: 1, Heading: "hello", Content: "some sample text"},
+		{Number: 2, Heading: "world", Content: "more sample text"},
+	},
+}
 
 func TestTable1(t *testing.T) {
 	mySettings, err := settings.GetSettings()
@@ -57,7 +66,7 @@ func TestS3Helper(t *testing.T) {
 
 	ctx := context.Background()
 
-	s3Helper, err := InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	s3Helper, err := InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	assert.NoError(t, err, "error on InitializeS3Helper: %v", err)
 
 	t.Run("test PutTextFile, GetTextFile, DeleteTextFile", func(t *testing.T) {
@@ -79,6 +88,28 @@ func TestS3Helper(t *testing.T) {
 		assert.NoError(t, err, "error on delete text file with fileName=%s: %v", fileName, err)
 		_, err = s3Helper.GetTextFile(ctx, fileName)
 		assert.Error(t, err, "get text file was supposed to receive an error after deletion, fileName=%s", fileName)
+	})
+
+	t.Run("test PutStatute, GetStatute, DeleteStatute", func(t *testing.T) {
+
+		// put returns no error
+		err := s3Helper.PutStatute(ctx, testStatute)
+		assert.NoError(t, err, "error on put statute: %v", err)
+
+		// get retrieves the statute
+		fileName := testStatute.Chapter + "." + testStatute.Section + " " + testStatute.Title
+		key := s3Helper.getChunkObjectKey(fileName)
+		statute, err := s3Helper.GetStatute(ctx, key)
+		assert.NoError(t, err, "error on get statute: %v", err)
+		assert.Equal(t, testStatute, statute, "error statutes are not equal but should be")
+
+		// delete returns no error
+		err = s3Helper.DeleteStatute(ctx, statute)
+		assert.NoError(t, err, "delete returned an error")
+
+		// get after delete returns error
+		_, err = s3Helper.GetStatute(ctx, key)
+		assert.Error(t, err, "did not get an error after deleting statute")
 	})
 
 }

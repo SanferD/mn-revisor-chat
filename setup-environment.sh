@@ -78,5 +78,6 @@ echo
 echo "BUCKET_NAME=\"$BUCKET_NAME\""
 echo "LOCAL_ENDPOINT=\"http://localhost:4566/\""
 echo "RAW_PATH_PREFIX=\"raw\""
+echo "CHUNK_PATH_PREFIX=\"chunk\""
 echo "TABLE_1_ARN=\"$TABLE_1_ARN\""
 echo "URL_SQS_ARN=\"$QUEUE_ARN\""

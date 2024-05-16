@@ -70,6 +70,12 @@ type RawDataStore interface {
 	DeleteTextFile(context.Context, string) error
 }
 
+type StatutesDataStore interface {
+	GetStatute(context.Context, string) (Statute, error)
+	PutStatute(context.Context, Statute) error
+	DeleteStatute(context.Context, Statute) error
+}
+
 type WebClient interface {
 	GetHTML(context.Context, string) ([]byte, error)
 }
