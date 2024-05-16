@@ -14,13 +14,14 @@ const relativeSettingsFilePath = "../../../settings.env"
 const defaultContextTimeout = 31 * time.Second
 
 type Settings struct {
-	LocalEndpoint  *string       `mapstructure:"LOCAL_ENDPOINT"`
-	Table1ARN      string        `mapstructure:"TABLE_1_ARN"`
-	URLSQSARN      string        `mapstructure:"URL_SQS_ARN"`
-	ContextTimeout time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
-	DoLogToStdout  bool          `mapstructure:"LOG_TO_STDOUT"`
-	BucketName     string        `mapstructure:"BUCKET_NAME"`
-	RawPathPrefix  string        `mapstructure:"RAW_PATH_PREFIX"`
+	LocalEndpoint   *string       `mapstructure:"LOCAL_ENDPOINT"`
+	Table1ARN       string        `mapstructure:"TABLE_1_ARN"`
+	URLSQSARN       string        `mapstructure:"URL_SQS_ARN"`
+	ContextTimeout  time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
+	DoLogToStdout   bool          `mapstructure:"LOG_TO_STDOUT"`
+	BucketName      string        `mapstructure:"BUCKET_NAME"`
+	RawPathPrefix   string        `mapstructure:"RAW_PATH_PREFIX"`
+	ChunkPathPrefix string        `mapstructure:"CHUNK_PATH_PREFIX"`
 }
 
 const emptySettings = `LOCAL_ENDPOINT=
@@ -28,6 +29,7 @@ TABLE_1_ARN=
 URL_SQS_ARN=
 BUCKET_NAME=
 RAW_PATH_PREFIX=
+CHUNK_PATH_PREFIX=
 `
 
 func GetSettings() (*Settings, error) {
