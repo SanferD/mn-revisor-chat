@@ -19,7 +19,7 @@ type S3Helper struct {
 	timeout       time.Duration
 }
 
-func InitializeS3Helper(ctx context.Context, bucketName string, rawPathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
+func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -38,9 +38,23 @@ func InitializeS3Helper(ctx context.Context, bucketName string, rawPathPrefix st
 }
 
 func (s3Helper *S3Helper) PutTextFile(ctx context.Context, fileName string, body io.Reader) error {
+	key := s3Helper.getRawObjectKey(fileName)
+	return s3Helper.putFile(ctx, key, body)
+}
+
+func (s3Helper *S3Helper) GetTextFile(ctx context.Context, fileName string) (string, error) {
+	key := s3Helper.getRawObjectKey(fileName)
+	return s3Helper.getObject(ctx, key)
+}
+
+func (s3Helper *S3Helper) DeleteTextFile(ctx context.Context, fileName string) error {
+	key := s3Helper.getRawObjectKey(fileName)
+	return s3Helper.deleteObject(ctx, key)
+}
+
+func (s3Helper *S3Helper) putFile(ctx context.Context, key string, body io.Reader) error {
 	ctx, cancel := context.WithTimeout(ctx, s3Helper.timeout)
 	defer cancel()
-	key := s3Helper.getRawObjectKey(fileName)
 	putObjectInput := &s3.PutObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key), Body: body}
 	if _, err := s3Helper.client.PutObject(ctx, putObjectInput); err != nil {
 		return fmt.Errorf("error on PutObject: %v", err)
@@ -48,10 +62,9 @@ func (s3Helper *S3Helper) PutTextFile(ctx context.Context, fileName string, body
 	return nil
 }
 
-func (s3Helper *S3Helper) GetTextFile(ctx context.Context, fileName string) (string, error) {
+func (s3Helper *S3Helper) getObject(ctx context.Context, key string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, s3Helper.timeout)
 	defer cancel()
-	key := s3Helper.getRawObjectKey(fileName)
 	getObjectInput := &s3.GetObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key)}
 	getObjectOutput, err := s3Helper.client.GetObject(ctx, getObjectInput)
 	if err != nil {
@@ -62,17 +75,18 @@ func (s3Helper *S3Helper) GetTextFile(ctx context.Context, fileName string) (str
 		return "", fmt.Errorf("error on reading contents of get object body: %v", err)
 	}
 	return string(bytes), nil
+
 }
 
-func (s3Helper *S3Helper) DeleteTextFile(ctx context.Context, fileName string) error {
+func (s3Helper *S3Helper) deleteObject(ctx context.Context, key string) error {
 	ctx, cancel := context.WithTimeout(ctx, s3Helper.timeout)
 	defer cancel()
-	key := s3Helper.getRawObjectKey(fileName)
 	deleteObjectInput := &s3.DeleteObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key)}
 	if _, err := s3Helper.client.DeleteObject(ctx, deleteObjectInput); err != nil {
 		return fmt.Errorf("error on deleting object from s3: %v", err)
 	}
 	return nil
+
 }
 
 func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
