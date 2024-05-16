@@ -17,12 +17,26 @@ type QueueMessage struct {
 
 type MNRevisorPageKind int
 
+type Subdivision struct {
+	Number  int
+	Heading string
+	Content string
+}
+
 const (
-	StatutesTOC MNRevisorPageKind = iota
-	StatutesChaptersList
-	StatutesSectionsList
-	StatutesSection
+	MNRevisorPageKindError MNRevisorPageKind = -1
+	StatutesChaptersTable  MNRevisorPageKind = iota
+	StatutesChaptersShortTable
+	StatutesSectionsTable
+	Statutes
 )
+
+type Statute struct {
+	Chapter      string
+	Section      string
+	Title        string
+	Subdivisions []Subdivision
+}
 
 type Logger interface {
 	Info(string, ...any)
@@ -58,4 +72,10 @@ type RawDataStore interface {
 
 type WebClient interface {
 	GetHTML(context.Context, string) ([]byte, error)
+}
+
+type MNRevisorStatutesScraper interface {
+	GetPageKind(io.Reader) (MNRevisorPageKind, error)
+	ExtractURLs(io.Reader, MNRevisorPageKind) ([]string, error)
+	ExtractStatute(io.Reader) (*Statute, error)
 }
