@@ -8,16 +8,20 @@ import (
 	"code/infrastructure/settings"
 	"code/infrastructure/stores"
 	"context"
-	"github.com/aws/aws-lambda-go/lambda"
 	"log"
+
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
-	urlQueue core.URLQueue
-	logger   core.Logger
+	logger       core.Logger
+	seenURLStore core.SeenURLStore
+	urlQueue     core.URLQueue
 )
 
-func HandleRequest(ctx context.Context) error {
+func init() {
+	ctx := context.Background()
+
 	mySettings, err := settings.GetSettings()
 	if err != nil {
 		log.Fatalf("error on GetSettings: %v", err)
@@ -33,13 +37,15 @@ func HandleRequest(ctx context.Context) error {
 		logger.Fatal("error on initialize-sqs: %v", err)
 	}
 
-	table1, err := stores.InitializeTable1(ctx, mySettings.Table1ARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	seenURLStore, err = stores.InitializeTable1(ctx, mySettings.Table1ARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	if err != nil {
 		logger.Fatal("error on initialize-table1: %v", err)
 	}
 
-	err = application.TriggerCrawler(ctx, urlQueue, table1, logger)
-	if err != nil {
+}
+
+func HandleRequest(ctx context.Context) error {
+	if err := application.TriggerCrawler(ctx, urlQueue, seenURLStore, logger); err != nil {
 		logger.Fatal("error on trigger-crawler: %v", err)
 	}
 	return nil

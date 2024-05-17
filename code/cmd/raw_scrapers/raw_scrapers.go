@@ -37,7 +37,9 @@ type s3Object struct {
 	Key string `json:"key"`
 }
 
-func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
+func init() {
+	ctx := context.Background()
+
 	mySettings, err := settings.GetSettings()
 	if err != nil {
 		log.Fatalf("error on GetSettings: %v", err)
@@ -70,6 +72,10 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 		logger.Fatal("error on initializing scraper: %v", err)
 	}
 
+}
+
+func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
+	var err error
 	for _, record := range sqsEvent.Records {
 		logger.Info("processing", record)
 		var event s3EventMessage
