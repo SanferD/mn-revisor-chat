@@ -1,6 +1,5 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as events from "aws-cdk-lib/aws-events";
 import * as eventsources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as targets from "aws-cdk-lib/aws-events-targets";
@@ -57,9 +56,9 @@ export class ScraperStack extends cdk.Stack {
     scraperFunction.addEventSource(new eventsources.SqsEventSource(this.rawEventsQueue.src));
 
     props.urlDualQueue.src.grantSendMessages(scraperFunction);
-    props.mainBucket.grantRead(scraperFunction, constants.RAW_OBJECT_PREFIX + "/*");
-    props.mainBucket.grantDelete(scraperFunction, constants.RAW_OBJECT_PREFIX + "/*");
-    props.mainBucket.grantPut(scraperFunction, constants.CHUNK_OBJECT_PREFIX + "/*");
+    props.mainBucket.grantRead(scraperFunction, constants.RAW_OBJECT_PREFIX_PATH_WILDCARD);
+    props.mainBucket.grantDelete(scraperFunction, constants.RAW_OBJECT_PREFIX_PATH_WILDCARD);
+    props.mainBucket.grantPut(scraperFunction, constants.CHUNK_OBJECT_PREFIX_PATH_WILDCARD);
     scraperFunction.addToRolePolicy(helpers.getListPolicy({ queues: true }));
   }
 }

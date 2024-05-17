@@ -75,13 +75,7 @@ export class CrawlerStack extends cdk.Stack {
     this.dualQueue.src.grantPurge(configuredFunction);
     this.dualQueue.src.grantSendMessages(configuredFunction);
     this.seenUrlTable.grantReadWriteData(configuredFunction);
-    configuredFunction.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["sqs:ListQueues", "dynamodb:ListTables"],
-        effect: iam.Effect.ALLOW,
-        resources: ["*"],
-      })
-    );
+    configuredFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     // setup ecs to run crawlers
 
