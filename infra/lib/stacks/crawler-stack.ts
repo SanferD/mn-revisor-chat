@@ -167,7 +167,7 @@ export class CrawlerStack extends cdk.Stack {
           namespace: "AWS/SQS",
           metricName: "ApproximateNumberOfMessagesVisible",
           dimensionsMap: { QueueName: this.dualQueue.src.queueName },
-          statistic: "average",
+          statistic: "max",
           period: cdk.Duration.minutes(1),
         }),
         num_tasks: new cloudwatch.Metric({
@@ -177,7 +177,7 @@ export class CrawlerStack extends cdk.Stack {
             ClusterName: crawlerCluster.clusterName,
             ServiceName: crawlerFargateService.serviceName,
           },
-          statistic: "average",
+          statistic: "max",
           period: cdk.Duration.minutes(1),
         }),
       },
