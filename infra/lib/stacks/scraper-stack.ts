@@ -7,6 +7,7 @@ import * as targets from "aws-cdk-lib/aws-events-targets";
 import { Construct } from "constructs";
 import { ConfiguredFunction } from "../constructs/configured-lambda";
 import { DualQueue } from "../constructs/dual-sqs";
+import { S3Rule } from "../constructs/s3-rule";
 import * as constants from "../constants";
 import * as helpers from "../helpers";
 
@@ -34,20 +35,9 @@ export class ScraperStack extends cdk.Stack {
     });
 
     // send PutObject events over s3://main-bucket/raw/* to the raw events queue
-    new events.Rule(this, "main-to-raw-events-sqs-rule", {
-      enabled: true,
-      eventPattern: {
-        source: ["aws.s3"],
-        detailType: ["Object Created"],
-        detail: {
-          bucket: {
-            name: ["main-bucket-mnrevisor"],
-          },
-          object: {
-            key: [{ prefix: "raw" }],
-          },
-        },
-      },
+    new S3Rule(this, "main-to-raw-events-sqs-rule", {
+      bucket: props.mainBucket,
+      prefix: constants.RAW_OBJECT_PREFIX_PATH,
       targets: [new targets.SqsQueue(this.rawEventsQueue.src)],
     });
 
