@@ -80,3 +80,29 @@ export function getRepositoryDirectory(): string {
 
   return path.resolve(directory, ".."); // Return the parent of the 'infra' directory
 }
+
+export interface getEnvironmentProps {
+  bucketName?: string;
+  table1Arn?: string;
+  urlSqsArn?: string;
+  rawEventsSqsArn?: string;
+}
+
+export function getEnvironment(props: getEnvironmentProps): { [key: string]: string } {
+  let environment: { [key: string]: string } = {};
+  environment[constants.RAW_PATH_PREFIX_ENV_NAME] = constants.RAW_OBJECT_PREFIX;
+  environment[constants.CHUNK_PATH_PREFIX_ENV_NAME] = constants.CHUNK_OBJECT_PREFIX;
+  if (props.bucketName !== null && props.bucketName !== undefined) {
+    environment[constants.BUCKET_NAME_ENV_NAME] = props.bucketName;
+  }
+  if (props.table1Arn !== null && props.table1Arn !== undefined) {
+    environment[constants.TABLE_1_ARN_ENV_NAME] = props.table1Arn;
+  }
+  if (props.urlSqsArn !== null && props.urlSqsArn !== undefined) {
+    environment[constants.URL_SQS_ARN_ENV_NAME] = props.urlSqsArn;
+  }
+  if (props.rawEventsSqsArn !== null && props.rawEventsSqsArn !== undefined) {
+    environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsSqsArn;
+  }
+  return environment;
+}
