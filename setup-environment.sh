@@ -13,17 +13,65 @@ write_settings() {
     echo "Writing settings to settings.env..."
     cat <<EOL > ./settings.env
 BUCKET_NAME="$BUCKET_NAME"
-LOCAL_ENDPOINT="http://localhost:4566/"
-RAW_PATH_PREFIX="raw"
 CHUNK_PATH_PREFIX="chunk"
+LOCAL_ENDPOINT="http://localhost:4566/"
+RAW_EVENTS_SQS_ARN="$RAW_EVENTS_SQS_ARN"
+RAW_PATH_PREFIX="raw"
 TABLE_1_ARN="$TABLE_1_ARN"
-URL_SQS_ARN="$QUEUE_ARN"
+URL_SQS_ARN="$URL_SQS_ARN"
 EOL
     echo "Settings written to ./settings.env"
 }
 
-QUEUE_NAME=url-to-crawl
-TABLE_NAME=table-1
+get_or_create_queue_arn() {
+    local QUEUE_NAME=$1
+    local QUEUE_URL
+    local URL_SQS_ARN
+
+    # Check if the queue exists and get the URL, otherwise create the queue
+    QUEUE_URL=$(awslocal sqs get-queue-url --queue-name $QUEUE_NAME | jq -r '.QueueUrl' 2>/dev/null)
+
+    if [ -z "$QUEUE_URL" ]; then
+        echo "Queue does not exist. Creating queue..." >&2
+        QUEUE_URL=$(awslocal sqs create-queue --queue-name $QUEUE_NAME | jq -r '.QueueUrl')
+        echo "Queue created. URL: $QUEUE_URL" >&2
+    else
+        echo "Queue already exists." >&2
+    fi
+
+    # Get the ARN of the queue using the queue URL
+    URL_SQS_ARN=$(awslocal sqs get-queue-attributes --queue-url $QUEUE_URL --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+
+    if [ -z "$URL_SQS_ARN" ]; then
+        echo "Failed to get queue ARN." >&2
+        return 1
+    else
+        echo "Queue ARN: $URL_SQS_ARN" >&2
+        echo $URL_SQS_ARN
+    fi
+}
+
+get_or_create_table_arn() {
+    local TABLE_NAME=$1
+    local TABLE_ARN
+
+    # Check if the table exists and get the ARN, otherwise create the table
+    TABLE_ARN=$(awslocal dynamodb describe-table --table-name $TABLE_NAME | jq -r '.Table.TableArn' 2>/dev/null)
+
+    if [ -z "$TABLE_ARN" ]; then
+        echo "Table does not exist. Creating table..." >&2
+        TABLE_ARN=$(awslocal dynamodb create-table --table-name $TABLE_NAME \
+            --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S \
+            --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE \
+            --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+            | jq -r '.TableDescription.TableArn')
+        echo "Table created. ARN: $TABLE_ARN" >&2
+    else
+        echo "Table already exists. ARN: $TABLE_ARN" >&2
+    fi
+
+    echo $TABLE_ARN
+}
 
 # confirm that localstack exists
 if ! command -v localstack &> /dev/null
@@ -51,38 +99,11 @@ MAIN_CONTAINER_NAME="localstack-pro" localstack start -d || echo "localstack alr
 MAIN_CONTAINER_NAME="localstack-pro" localstack wait
 
 # Check if the table exists and get the ARN, create the table if it does not exist
-TABLE_1_ARN=$(awslocal dynamodb describe-table --table-name $TABLE_NAME | jq -r '.Table.TableArn' 2>/dev/null)
-if [ -z "$TABLE_1_ARN" ]; then
-    echo "Table does not exist. Creating table..."
-    TABLE_1_ARN=$(awslocal dynamodb create-table --table-name $TABLE_NAME \
-        --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=sk,AttributeType=S \
-        --key-schema AttributeName=pk,KeyType=HASH AttributeName=sk,KeyType=RANGE \
-        --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-        | jq -r '.TableDescription.TableArn')
-    echo "Table created. ARN: $TABLE_1_ARN"
-else
-    echo "Table already exists. ARN: $TABLE_1_ARN"
-fi
-
-# Check if the queue exists and get the URL, otherwise create the queue
-QUEUE_URL=$(awslocal sqs get-queue-url --queue-name $QUEUE_NAME | jq -r '.QueueUrl' 2>/dev/null)
-
-if [ -z "$QUEUE_URL" ]; then
-    echo "Queue does not exist. Creating queue..."
-    QUEUE_URL=$(awslocal sqs create-queue --queue-name $QUEUE_NAME | jq -r '.QueueUrl')
-    echo "Queue created. URL: $QUEUE_URL"
-else
-    echo "Queue already exists."
-fi
+TABLE_1_ARN=$(get_or_create_table_arn "table-1")
 
 # Get the ARN of the queue using the queue URL
-QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url $QUEUE_URL --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
-
-if [ -z "$QUEUE_ARN" ]; then
-    echo "Failed to get queue ARN."
-else
-    echo "Queue ARN: $QUEUE_ARN"
-fi
+URL_SQS_ARN=$(get_or_create_queue_arn "url-to-crawl")
+RAW_EVENTS_SQS_ARN=$(get_or_create_queue_arn "raw-events-queue")
 
 # create s3 bucket if it doesn't already exist
 BUCKET_NAME="mn-revisor-chat-dev"
@@ -98,11 +119,12 @@ fi
 echo
 echo
 echo "BUCKET_NAME=\"$BUCKET_NAME\""
-echo "LOCAL_ENDPOINT=\"http://localhost:4566/\""
-echo "RAW_PATH_PREFIX=\"raw\""
 echo "CHUNK_PATH_PREFIX=\"chunk\""
+echo "LOCAL_ENDPOINT=\"http://localhost:4566/\""
+echo "RAW_EVENTS_SQS_ARN=\"$RAW_EVENTS_SQS_ARN\""
+echo "RAW_PATH_PREFIX=\"raw\""
 echo "TABLE_1_ARN=\"$TABLE_1_ARN\""
-echo "URL_SQS_ARN=\"$QUEUE_ARN\""
+echo "URL_SQS_ARN=\"$URL_SQS_ARN\""
 
 
 if [ "$OVERWRITE_SETTINGS" = true ]; then
