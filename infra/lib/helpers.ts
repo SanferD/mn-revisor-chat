@@ -3,7 +3,7 @@ import * as path from "path";
 import { execSync } from "child_process";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
-const validCmds = ["crawler", "trigger_crawler"];
+const validCmds = ["crawler", "trigger_crawler", "raw_scraper"];
 
 export function doMakeClean() {
   doMake("clean");
