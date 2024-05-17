@@ -107,25 +107,25 @@ func (scraper *Scraper) extractURLsFromTableXPath(contents io.Reader, xpath stri
 	return urls, nil
 }
 
-func (scraper *Scraper) ExtractStatute(contents io.Reader) (*core.Statute, error) {
+func (scraper *Scraper) ExtractStatute(contents io.Reader) (core.Statute, error) {
 	doc, err := htmlquery.Parse(contents)
 	if err != nil {
-		return nil, fmt.Errorf("error on parsing html: %v", err)
+		return core.Statute{}, fmt.Errorf("error on parsing html: %v", err)
 	}
 	sectionNode := htmlquery.FindOne(doc, sectionDivXPath)
 	if sectionNode == nil {
-		return nil, fmt.Errorf("error could not find 'section' div")
+		return core.Statute{}, fmt.Errorf("error could not find 'section' div")
 	}
 	title := htmlquery.FindOne(sectionNode, titleRelativeToSectionXPath)
 	if title == nil {
-		return nil, fmt.Errorf("error could not find statute title")
+		return core.Statute{}, fmt.Errorf("error could not find statute title")
 	}
 	subdivisionDivs := htmlquery.Find(sectionNode, subdivDivRelativeToSectionXPath)
 	var subdivisions []core.Subdivision
 	if subdivisionDivs == nil {
 		paraNode := htmlquery.FindOne(sectionNode, paraNodeRelativeToSectionXPath)
 		if paraNode == nil {
-			return nil, fmt.Errorf("error could not find subdivisionss")
+			return core.Statute{}, fmt.Errorf("error could not find subdivisionss")
 		}
 		var subdivision = core.Subdivision{
 			Number:  -1,
@@ -136,7 +136,7 @@ func (scraper *Scraper) ExtractStatute(contents io.Reader) (*core.Statute, error
 	} else {
 		subdivisions, err = scraper.extractSubdivisions(subdivisionDivs)
 		if err != nil {
-			return nil, err
+			return core.Statute{}, err
 		}
 	}
 
@@ -149,7 +149,7 @@ func (scraper *Scraper) ExtractStatute(contents io.Reader) (*core.Statute, error
 		Title:        parts[1],
 		Subdivisions: subdivisions,
 	}
-	return &statute, nil
+	return statute, nil
 }
 
 func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdivision, error) {

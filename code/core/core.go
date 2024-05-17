@@ -83,5 +83,5 @@ type WebClient interface {
 type MNRevisorStatutesScraper interface {
 	GetPageKind(io.Reader) (MNRevisorPageKind, error)
 	ExtractURLs(io.Reader, MNRevisorPageKind) ([]string, error)
-	ExtractStatute(io.Reader) (*Statute, error)
+	ExtractStatute(io.Reader) (Statute, error)
 }

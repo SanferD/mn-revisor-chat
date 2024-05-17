@@ -91,7 +91,7 @@ func TestScrapers(t *testing.T) {
 			assert.NoError(t, err, "error on reading text file contents: %v", err)
 			statute, err := scraper.ExtractStatute(contents)
 			if assert.NoError(t, err, "error on extracting statute: %v") {
-				assert.Equal(t, test.statute, *statute, "statutes are not equal")
+				assert.Equal(t, test.statute, statute, "statutes are not equal")
 			}
 		}
 	})
