@@ -26,15 +26,12 @@ export class ConfiguredFunction extends lambda.Function {
       handler: HANDLE_REQUESTS, // handler function. Can be named anything, happens to be "Handler"
       runtime: lambda.Runtime.PROVIDED_AL2023, // recommended
       allowPublicSubnet: false, // network isolation => private subnets only
-      environment: props.environment,
       logGroup: new TempLogGroup(scope, `${functionName}-log-group`), // custom log group to simplify stack deletion
       memorySize: 512, // 512 MB
       reservedConcurrentExecutions: 1, // 1 concurrent execution since this is manually triggered
       retryAttempts: 0, // don't retry, error => failed execution
-      securityGroups: [props.securityGroup],
       timeout: cdk.Duration.minutes(7), // fast running Lambda (2-3 minutes), 7 minutes just incase
-      vpc: props.vpc, // network isolation => within VPC
-      vpcSubnets: props.vpcSubnets, // network isolatoin => private isolated subnets only
+      ...props,
     });
   }
 }
