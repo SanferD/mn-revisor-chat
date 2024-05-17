@@ -160,11 +160,17 @@ func (sqsHelper *SQSHelper) ReceiveQueueMessage(ctx context.Context) (*core.Queu
 }
 
 func (sqsHelper *SQSHelper) DeleteQueueMessage(ctx context.Context, queueMessage *core.QueueMessage) error {
+	return sqsHelper.DeleteMessage(ctx, queueMessage.Handle)
+}
+
+func (sqsHelper *SQSHelper) DeleteMessage(ctx context.Context, receiptHandle string) error {
 	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
 	defer cancel()
-	_, err := sqsHelper.client.DeleteMessage(ctx, &sqs.DeleteMessageInput{QueueUrl: &sqsHelper.queueURL, ReceiptHandle: &queueMessage.Handle})
+	deleteMessageInput := &sqs.DeleteMessageInput{QueueUrl: &sqsHelper.queueURL, ReceiptHandle: &receiptHandle}
+	_, err := sqsHelper.client.DeleteMessage(ctx, deleteMessageInput)
 	if err != nil {
 		return fmt.Errorf("error on DeleteMessage: %v", err)
 	}
 	return nil
+
 }

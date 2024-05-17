@@ -58,6 +58,10 @@ type URLQueue interface {
 	DeleteURLQueueMessage(context.Context, *URLQueueMessage) error
 }
 
+type RawEventsQueue interface {
+	DeleteMessage(ctx context.Context, receiptHandle string) error
+}
+
 type SeenURLStore interface {
 	PutURL(context.Context, string) error
 	HasURL(context.Context, string) (bool, error)
