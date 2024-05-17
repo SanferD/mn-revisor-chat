@@ -26,6 +26,10 @@ function main(app: cdk.App, config: conf.Config) {
   const scraperStack = new ScraperStack(app, i("scraper-stack"), {
     mainBucket: s3Stack.mainBucket,
     nonce: config.nonce,
+    vpc: vpcStack.vpc,
+    securityGroup: vpcStack.securityGroup,
+    privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
+    urlDualQueue: crawlerStack.dualQueue,
   });
 }
 
