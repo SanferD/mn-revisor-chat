@@ -1,4 +1,5 @@
 import * as constants from "./constants";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 import { execSync } from "child_process";
 
@@ -105,4 +106,27 @@ export function getEnvironment(props: getEnvironmentProps): { [key: string]: str
     environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsSqsArn;
   }
   return environment;
+}
+
+export interface getListPolicyProps {
+  queues?: boolean;
+  tables?: boolean;
+}
+
+export function getListPolicy(props: getListPolicyProps): iam.PolicyStatement {
+  var actions = [];
+  if (props.queues ?? false) {
+    actions.push("sqs:ListQueues");
+  }
+  if (props.tables ?? false) {
+    actions.push("dynamodb:ListTables");
+  }
+  if (actions.length == 0) {
+    throw new Error("no actions specified for getListPolicy");
+  }
+  return new iam.PolicyStatement({
+    actions,
+    effect: iam.Effect.ALLOW,
+    resources: ["*"],
+  });
 }
