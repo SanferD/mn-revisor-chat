@@ -30,14 +30,12 @@ func TriggerCrawler(ctx context.Context, urlQueue core.URLQueue, seenURLStore co
 }
 
 func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenURLStore, rawDataStore core.RawDataStore, webClient core.WebClient, interruptWatcher core.InterruptWatcher, logger core.Logger) error {
+	var sleepSeconds float32 = 1
 	for !interruptWatcher.IsInterrupted() {
 		var err error
 
-		// sleep for politeness
-		sleepSeconds := sleepSecondsMin + rand.Float32()*sleepSecondsDelta
-		sleepDuration := time.Second * time.Duration(sleepSeconds)
-		logger.Info("sleeping for %v", sleepDuration)
-		time.Sleep(sleepDuration)
+		sleep(logger, sleepSeconds)
+		sleepSeconds = 1
 
 		// get URL
 		logger.Info("receiving next url from queue")
@@ -66,8 +64,12 @@ func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenUR
 			if err = urlQueue.DeleteURLQueueMessage(ctx, urlQueueMessage); err != nil {
 				logger.Error("error on deleting queue message: %v", err)
 			}
+			sleepSeconds = 0.1 // sleep for 100ms, then check the next url
 			continue
 		}
+
+		// update sleep seconds for politeness
+		sleepSeconds = sleepSecondsMin + rand.Float32()*sleepSecondsDelta
 
 		// get Web page
 		logger.Info("getting HTML for url='%s'", url)
@@ -104,4 +106,10 @@ func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenUR
 		logger.Info("url='%s' crawl done", url)
 	}
 	return nil
+}
+
+func sleep(logger core.Logger, seconds float32) {
+	sleepDuration := time.Second * time.Duration(seconds)
+	logger.Info("short sleeping for %v", sleepDuration)
+	time.Sleep(sleepDuration)
 }
