@@ -8,10 +8,10 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { TempLogGroup } from "../constructs/temp-log-group";
-import { DualQueue } from "../constructs/dual-sqs";
 import { ConfiguredFunction } from "../constructs/configured-lambda";
-import { RAW_OBJECT_PREFIX, TTL_ATTRIBUTE } from "../constants";
+import { DualQueue } from "../constructs/dual-sqs";
+import { TempLogGroup } from "../constructs/temp-log-group";
+import * as constants from "../constants";
 import * as helpers from "../helpers";
 
 const URL_SQS_NAME = "url-to-crawl";
@@ -49,7 +49,7 @@ export class CrawlerStack extends cdk.Stack {
       billing,
       deletionProtection: false, // simplify cleanup
       removalPolicy: cdk.RemovalPolicy.DESTROY, // delete table on stack deletion for easy cleanup of demo
-      timeToLiveAttribute: TTL_ATTRIBUTE, // application sets TTL to reduce storage costs
+      timeToLiveAttribute: constants.TTL_ATTRIBUTE, // application sets TTL to reduce storage costs
     });
 
     // setup SQS infrastructure
@@ -130,7 +130,7 @@ export class CrawlerStack extends cdk.Stack {
       taskDefinition: crawlerTaskDefinition,
       environment: {
         BUCKET_NAME: props.mainBucket.bucketName,
-        RAW_PATH_PREFIX: RAW_OBJECT_PREFIX,
+        RAW_PATH_PREFIX: constants.RAW_OBJECT_PREFIX,
         TABLE_1_ARN: this.seenUrlTable.tableArn,
         URL_SQS_ARN: this.dualQueue.src.queueArn,
       },
