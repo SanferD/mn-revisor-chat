@@ -107,14 +107,8 @@ export class CrawlerStack extends cdk.Stack {
     ////// configure crawler service permissions
     this.dualQueue.src.grantConsumeMessages(crawlerTaskDefinition.taskRole);
     this.seenUrlTable.grantReadWriteData(crawlerTaskDefinition.taskRole);
-    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole);
-    crawlerTaskDefinition.addToTaskRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["sqs:ListQueues", "dynamodb:ListTables"],
-        effect: iam.Effect.ALLOW,
-        resources: ["*"],
-      })
-    );
+    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole, constants.RAW_OBJECT_PREFIX + "/*");
+    crawlerTaskDefinition.addToTaskRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     ////// docker image asset
     helpers.doMakeBuildEcs(CRAWLER_NAME);
