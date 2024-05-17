@@ -54,9 +54,8 @@ func (s3Helper *S3Helper) PutStatute(ctx context.Context, statute core.Statute) 
 }
 
 func (s3Helper *S3Helper) GetStatute(ctx context.Context, key string) (core.Statute, error) {
-	prefix := s3Helper.chunkPathPrefix + "/"
-	if !strings.HasPrefix(key, prefix) {
-		return core.Statute{}, fmt.Errorf("key doesn't have the correct prefix, prefix='%s', key='%s'", prefix, key)
+	if err := s3Helper.validatePrefix(key, s3Helper.chunkPathPrefix); err != nil {
+		return core.Statute{}, err
 	}
 	contents, err := s3Helper.getObject(ctx, key)
 	if err != nil {
@@ -83,8 +82,10 @@ func (s3Helper *S3Helper) PutTextFile(ctx context.Context, fileName string, body
 	return s3Helper.putFile(ctx, key, body)
 }
 
-func (s3Helper *S3Helper) GetTextFile(ctx context.Context, fileName string) (string, error) {
-	key := s3Helper.getRawObjectKey(fileName)
+func (s3Helper *S3Helper) GetTextFile(ctx context.Context, key string) (string, error) {
+	if err := s3Helper.validatePrefix(key, s3Helper.rawPathPrefix); err != nil {
+		return "", err
+	}
 	return s3Helper.getObject(ctx, key)
 }
 
@@ -140,4 +141,12 @@ func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
 
 func (s3Helper *S3Helper) getChunkObjectKey(fileName string) string {
 	return s3Helper.chunkPathPrefix + "/" + fileName
+}
+
+func (s3Helper *S3Helper) validatePrefix(key, prefix string) error {
+	prefix = prefix + "/"
+	if !strings.HasPrefix(key, prefix) {
+		return fmt.Errorf("key doens't have correct prefix, prefix=%s, key=%s", prefix, key)
+	}
+	return nil
 }

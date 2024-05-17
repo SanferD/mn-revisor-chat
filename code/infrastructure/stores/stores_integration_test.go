@@ -79,7 +79,8 @@ func TestS3Helper(t *testing.T) {
 		assert.NoError(t, err, "error on PutTextFile with fileName=%s: %v", fileName, err)
 
 		// get returns the file contents
-		foundContents, err := s3Helper.GetTextFile(ctx, fileName)
+		key := s3Helper.getRawObjectKey(fileName)
+		foundContents, err := s3Helper.GetTextFile(ctx, key)
 		assert.NoError(t, err, "error no get text file with fileName=%s: %v", fileName, err)
 		assert.Equal(t, fileContents, foundContents, "get text file contents are not the same.")
 
