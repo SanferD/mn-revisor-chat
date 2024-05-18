@@ -60,7 +60,7 @@ func init() {
 		logger.Fatal("error on initialize-sqs: %v", err)
 	}
 
-	s3Helper, err := stores.InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	s3Helper, err := stores.InitializeS3Helper(ctx, mySettings.MainBucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	if err != nil {
 		logger.Fatal("error on initializing s3-helper: %v", err)
 	}

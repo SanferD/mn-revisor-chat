@@ -66,7 +66,7 @@ func TestS3Helper(t *testing.T) {
 
 	ctx := context.Background()
 
-	s3Helper, err := InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	s3Helper, err := InitializeS3Helper(ctx, mySettings.MainBucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	assert.NoError(t, err, "error on InitializeS3Helper: %v", err)
 
 	t.Run("test PutTextFile, GetTextFile, DeleteTextFile", func(t *testing.T) {

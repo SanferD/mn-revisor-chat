@@ -14,7 +14,7 @@ const relativeSettingsFilePath = "../../../settings.env"
 const defaultContextTimeout = 31 * time.Second
 
 type Settings struct {
-	BucketName      string        `mapstructure:"BUCKET_NAME"`
+	MainBucketName  string        `mapstructure:"MAIN_BUCKET_NAME"`
 	ChunkPathPrefix string        `mapstructure:"CHUNK_PATH_PREFIX"`
 	ContextTimeout  time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
 	DoLogToStdout   bool          `mapstructure:"LOG_TO_STDOUT"`
