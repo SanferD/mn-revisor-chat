@@ -1,7 +1,11 @@
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as constants from "./constants";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 import { execSync } from "child_process";
+import { DynamoDbDataSource } from "aws-cdk-lib/aws-appsync";
+import { DualQueue } from "./constructs/dual-sqs";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
 const validCmds = ["crawler", "trigger_crawler", "raw_scraper"];
@@ -83,27 +87,31 @@ export function getRepositoryDirectory(): string {
 }
 
 export interface getEnvironmentProps {
-  bucketName?: string;
-  table1Arn?: string;
-  urlSqsArn?: string;
-  rawEventsSqsArn?: string;
+  mainBucket?: s3.Bucket;
+  table1?: dynamodb.TableV2;
+  urlDQ?: DualQueue;
+  rawEventsDQ?: DualQueue;
+  toIndexDQ?: DualQueue;
 }
 
 export function getEnvironment(props: getEnvironmentProps): { [key: string]: string } {
   let environment: { [key: string]: string } = {};
   environment[constants.RAW_PATH_PREFIX_ENV_NAME] = constants.RAW_OBJECT_PREFIX;
   environment[constants.CHUNK_PATH_PREFIX_ENV_NAME] = constants.CHUNK_OBJECT_PREFIX;
-  if (props.bucketName !== null && props.bucketName !== undefined) {
-    environment[constants.BUCKET_NAME_ENV_NAME] = props.bucketName;
+  if (props.mainBucket !== null && props.mainBucket !== undefined) {
+    environment[constants.MAIN_BUCKET_NAME_ENV_NAME] = props.mainBucket.bucketName;
   }
-  if (props.table1Arn !== null && props.table1Arn !== undefined) {
-    environment[constants.TABLE_1_ARN_ENV_NAME] = props.table1Arn;
+  if (props.table1 !== null && props.table1 !== undefined) {
+    environment[constants.TABLE_1_ARN_ENV_NAME] = props.table1.tableArn;
   }
-  if (props.urlSqsArn !== null && props.urlSqsArn !== undefined) {
-    environment[constants.URL_SQS_ARN_ENV_NAME] = props.urlSqsArn;
+  if (props.urlDQ !== null && props.urlDQ !== undefined) {
+    environment[constants.URL_SQS_ARN_ENV_NAME] = props.urlDQ.src.queueArn;
   }
-  if (props.rawEventsSqsArn !== null && props.rawEventsSqsArn !== undefined) {
-    environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsSqsArn;
+  if (props.rawEventsDQ !== null && props.rawEventsDQ !== undefined) {
+    environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsDQ.src.queueArn;
+  }
+  if (props.toIndexDQ !== null && props.toIndexDQ !== undefined) {
+    environment[constants.TO_INDEX_SQS_ARN_ENV_NAME] = props.toIndexDQ.src.queueArn;
   }
   return environment;
 }
