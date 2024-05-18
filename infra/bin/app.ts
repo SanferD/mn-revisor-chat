@@ -5,6 +5,7 @@ import { S3Stack } from "../lib/stacks/s3-stack";
 import { CrawlerStack } from "../lib/stacks/crawler-stack";
 import { VpcStack } from "../lib/stacks/vpc-stack";
 import { ScraperStack } from "../lib/stacks/scraper-stack";
+import { IndexerStack } from "../lib/stacks/indexer-stack";
 
 function main(app: cdk.App, config: conf.Config) {
   console.log("config: ", config);
