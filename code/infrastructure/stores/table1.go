@@ -13,11 +13,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-const tableName = "table-1"
+const batchSize = 25 // DynamoDB allows a maximum of 25 items per batch write
+const pkURLPrefix = "url#"
 const primaryKey = "pk"
 const secondaryKey = "sk"
-const pkURLPrefix = "url#"
 const skURLPrefix = "url#"
+const tableName = "table-1"
 
 type Table1 struct {
 	client    *dynamodb.Client
@@ -135,6 +136,9 @@ func (table1 *Table1) DeleteAll(ctx context.Context) error {
 	scanPaginator := dynamodb.NewScanPaginator(table1.client, &dynamodb.ScanInput{
 		TableName: &table1.tableName,
 	})
+
+	var writeRequests []types.WriteRequest = make([]types.WriteRequest, 0, batchSize)
+
 	for scanPaginator.HasMorePages() {
 		ctx, cancel := context.WithTimeout(ctx, table1.timeout)
 		defer cancel()
@@ -144,19 +148,40 @@ func (table1 *Table1) DeleteAll(ctx context.Context) error {
 		}
 
 		for _, item := range scanPage.Items {
-			ctx, cancel := context.WithTimeout(ctx, table1.timeout)
-			defer cancel()
-			_, err := table1.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-				TableName: &table1.tableName,
-				Key: map[string]types.AttributeValue{
-					"pk": item["pk"],
-					"sk": item["sk"],
+			writeRequests = append(writeRequests, types.WriteRequest{
+				DeleteRequest: &types.DeleteRequest{
+					Key: map[string]types.AttributeValue{
+						"pk": item["pk"],
+						"sk": item["sk"],
+					},
 				},
 			})
-			if err != nil {
-				return fmt.Errorf("error deleting item: %v", err)
+
+			// Batch write when we reach batchSize
+			if len(writeRequests) == batchSize {
+				if err := table1.batchWrite(ctx, writeRequests); err != nil {
+					return fmt.Errorf("error during batch write: %v", err)
+				}
+				writeRequests = make([]types.WriteRequest, 0, batchSize)
 			}
 		}
 	}
+
+	// Write remaining items if any
+	if len(writeRequests) > 0 {
+		if err := table1.batchWrite(ctx, writeRequests); err != nil {
+			return fmt.Errorf("error during final batch write: %v", err)
+		}
+	}
+
 	return nil
+}
+
+func (table1 *Table1) batchWrite(ctx context.Context, writeRequests []types.WriteRequest) error {
+	_, err := table1.client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+		RequestItems: map[string][]types.WriteRequest{
+			table1.tableName: writeRequests,
+		},
+	})
+	return err
 }
