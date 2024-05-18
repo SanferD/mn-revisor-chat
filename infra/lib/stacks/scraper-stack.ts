@@ -20,6 +20,7 @@ export interface ScraperStackProps extends cdk.StackProps {
   securityGroup: ec2.SecurityGroup;
   privateIsolatedSubnets: ec2.SubnetSelection;
   urlDualQueue: DualQueue;
+  triggerCrawlerFunction: ConfiguredFunction;
 }
 
 export class ScraperStack extends cdk.Stack {
@@ -56,6 +57,7 @@ export class ScraperStack extends cdk.Stack {
     scraperFunction.addEventSource(new eventsources.SqsEventSource(this.rawEventsQueue.src));
 
     props.urlDualQueue.src.grantSendMessages(scraperFunction);
+    this.rawEventsQueue.src.grantPurge(props.triggerCrawlerFunction);
     props.mainBucket.grantRead(scraperFunction, constants.RAW_OBJECT_PREFIX_PATH_WILDCARD);
     props.mainBucket.grantDelete(scraperFunction, constants.RAW_OBJECT_PREFIX_PATH_WILDCARD);
     props.mainBucket.grantPut(scraperFunction, constants.CHUNK_OBJECT_PREFIX_PATH_WILDCARD);

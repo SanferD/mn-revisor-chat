@@ -30,6 +30,7 @@ function main(app: cdk.App, config: conf.Config) {
     securityGroup: vpcStack.securityGroup,
     privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
     urlDualQueue: crawlerStack.dualQueue,
+    triggerCrawlerFunction: crawlerStack.triggerCrawlerFunction,
   });
 }
 

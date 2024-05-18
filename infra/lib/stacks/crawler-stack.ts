@@ -31,6 +31,7 @@ export interface CrawlerStackProps extends cdk.StackProps {
 export class CrawlerStack extends cdk.Stack {
   readonly dualQueue: DualQueue;
   readonly seenUrlTable: dynamodb.TableV2;
+  readonly triggerCrawlerFunction: ConfiguredFunction;
 
   constructor(scope: Construct, id: string, props: CrawlerStackProps) {
     super(scope, id, props);
@@ -59,7 +60,7 @@ export class CrawlerStack extends cdk.Stack {
     });
 
     // setup Lambda to trigger crawler
-    const configuredFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_NAME, {
+    this.triggerCrawlerFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_NAME, {
       environment: {
         URL_SQS_ARN: this.dualQueue.src.queueArn,
         TABLE_1_ARN: this.seenUrlTable.tableArn,
@@ -72,10 +73,10 @@ export class CrawlerStack extends cdk.Stack {
     });
 
     //// configure trigger-crawler permissions
-    this.dualQueue.src.grantPurge(configuredFunction);
-    this.dualQueue.src.grantSendMessages(configuredFunction);
-    this.seenUrlTable.grantReadWriteData(configuredFunction);
-    configuredFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
+    this.dualQueue.src.grantPurge(this.triggerCrawlerFunction);
+    this.dualQueue.src.grantSendMessages(this.triggerCrawlerFunction);
+    this.seenUrlTable.grantReadWriteData(this.triggerCrawlerFunction);
+    this.triggerCrawlerFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     // setup ecs to run crawlers
 
