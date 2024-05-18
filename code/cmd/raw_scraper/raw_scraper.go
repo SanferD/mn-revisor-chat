@@ -84,7 +84,7 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 		if err != nil {
 			logger.Fatal("error on scraping raw page: %v", err)
 		}
-		rawEventsQueue.DeleteMessage(ctx, record.ReceiptHandle)
+		rawEventsQueue.DeleteEvent(ctx, record.ReceiptHandle)
 	}
 	return nil
 }
