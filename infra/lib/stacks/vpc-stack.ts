@@ -2,8 +2,13 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 
+const VPC_ID = "vpc";
+const SECURITY_GROUP_ID = "security-group";
+const VPC_GATEWAY_ENDPOINT_DYNAMODB_ID = "vpc-gateway-endpoint-dynamodb";
+const VPC_INTERFACE_ENDPOINT_SQS_ID = "vpc-interface-endpoint-sqs";
+const VPC_GATEWAY_ENDPOINT_S3_ID = "vpc-gateway-endpoint-s3";
+
 export interface VpcStackProps extends cdk.StackProps {
-  nonce: string;
   azCount: number;
 }
 
@@ -17,8 +22,7 @@ export class VpcStack extends cdk.Stack {
     super(scope, id, props);
 
     // create vpc with 1 public subnet and 2 private subnets
-    this.vpc = new ec2.Vpc(this, "vpc", {
-      vpcName: `vpc-${props.nonce}`,
+    this.vpc = new ec2.Vpc(this, VPC_ID, {
       ipAddresses: ec2.IpAddresses.cidr("10.0.0.0/24"), // CIDR over 24
       maxAzs: props.azCount,
       enableDnsHostnames: true, // enable DNS hostnames & DNS support => can enable private DNS names on VPC endpoints
@@ -49,7 +53,7 @@ export class VpcStack extends cdk.Stack {
     });
 
     // create security group which facilitates communication over HTTPs.
-    this.securityGroup = new ec2.SecurityGroup(this, "security-group", {
+    this.securityGroup = new ec2.SecurityGroup(this, SECURITY_GROUP_ID, {
       vpc: this.vpc,
       allowAllOutbound: false,
     });
@@ -57,20 +61,20 @@ export class VpcStack extends cdk.Stack {
 
     // vpc endpoints
     //// vpc endpoint to DynamoDB
-    this.vpc.addGatewayEndpoint("vpc-endpoint-ddb", {
+    this.vpc.addGatewayEndpoint(VPC_GATEWAY_ENDPOINT_DYNAMODB_ID, {
       service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
       subnets: [this.privateIsolatedSubnets],
     });
 
     //// vpc endpoint to SQS
-    this.vpc.addInterfaceEndpoint("vpc-endpoint-sqs", {
+    this.vpc.addInterfaceEndpoint(VPC_INTERFACE_ENDPOINT_SQS_ID, {
       service: ec2.InterfaceVpcEndpointAwsService.SQS,
       privateDnsEnabled: true,
       subnets: this.privateIsolatedSubnets,
     });
 
     //// vpc endpoint to S3
-    this.vpc.addGatewayEndpoint("vpc-endpoint-s3", {
+    this.vpc.addGatewayEndpoint(VPC_GATEWAY_ENDPOINT_S3_ID, {
       service: ec2.GatewayVpcEndpointAwsService.S3,
       subnets: [this.privateIsolatedSubnets],
     });

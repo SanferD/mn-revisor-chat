@@ -1,37 +1,42 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import * as conf from "../lib/config";
-import { S3Stack } from "../lib/stacks/s3-stack";
 import { CrawlerStack } from "../lib/stacks/crawler-stack";
-import { VpcStack } from "../lib/stacks/vpc-stack";
-import { ScraperStack } from "../lib/stacks/scraper-stack";
 import { IndexerStack } from "../lib/stacks/indexer-stack";
+import { ScraperStack } from "../lib/stacks/scraper-stack";
+import { StatefulStack } from "../lib/stacks/stateful-stack";
+import { VpcStack } from "../lib/stacks/vpc-stack";
 
 function main(app: cdk.App, config: conf.Config) {
   console.log("config: ", config);
 
   const i = (x: string) => `${x}-${config.nonce}`;
-  const s3Stack = new S3Stack(app, i("s3-stack"), { nonce: config.nonce });
 
-  const vpcStack = new VpcStack(app, i("vpc-stack"), { nonce: config.nonce, azCount: config.azCount });
+  const statefulStack = new StatefulStack(app, i("stateful-stack"), {});
+  const vpcStack = new VpcStack(app, i("vpc-stack"), { azCount: config.azCount });
 
-  const crawlerStack = new CrawlerStack(app, i("crawler-stack"), {
-    mainBucket: s3Stack.mainBucket,
-    nonce: config.nonce,
+  const commonProps = {
+    securityGroup: vpcStack.securityGroup,
+    vpc: vpcStack.vpc,
     privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
     privateWithEgressSubnets: vpcStack.privateWithEgressSubnets,
-    securityGroup: vpcStack.securityGroup,
-    vpc: vpcStack.vpc,
+    mainBucket: statefulStack.mainBucket,
+    table1: statefulStack.table1,
+    urlDQ: statefulStack.urlDQ,
+    rawEventsDQ: statefulStack.rawEventsDQ,
+    toIndexDQ: statefulStack.toIndexDQ,
+  };
+
+  new CrawlerStack(app, i("crawler-stack"), {
+    ...commonProps,
   });
 
-  const scraperStack = new ScraperStack(app, i("scraper-stack"), {
-    mainBucket: s3Stack.mainBucket,
-    nonce: config.nonce,
-    vpc: vpcStack.vpc,
-    securityGroup: vpcStack.securityGroup,
-    privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
-    urlDualQueue: crawlerStack.dualQueue,
-    triggerCrawlerFunction: crawlerStack.triggerCrawlerFunction,
+  new ScraperStack(app, i("scraper-stack"), {
+    ...commonProps,
+  });
+
+  new IndexerStack(app, i("indexer-stack"), {
+    ...commonProps,
   });
 }
 

@@ -3,13 +3,13 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import { KiB } from "../constants";
 import { Construct } from "constructs";
 
-export interface DualQueueProps {
-  name: string;
-  nonce: string;
-}
+const DLQ_KIND = "dlq";
+const SRC_KIND = "src";
 
-const DLQ_NAME = "dlq";
-const SRC_NAME = "src";
+export interface DualQueueProps {
+  src?: sqs.QueueProps;
+  dlq?: sqs.QueueProps;
+}
 
 export class DualQueue extends Construct {
   readonly src: sqs.Queue;
@@ -19,11 +19,9 @@ export class DualQueue extends Construct {
     super(scope, id);
 
     const makeId = (kind: string): string => `${id}-${kind}`;
-    const makeQueueName = (kind: string): string => `${props.name}-${kind}-${props.nonce}`;
 
     // create dead letter queue
-    this.dlq = new sqs.Queue(this, makeId(DLQ_NAME), {
-      queueName: makeQueueName(DLQ_NAME),
+    this.dlq = new sqs.Queue(this, makeId(DLQ_KIND), {
       retentionPeriod: cdk.Duration.days(14), // retain the message for 2 weeks
       visibilityTimeout: cdk.Duration.minutes(2), // set the visibility for at most 2 minutes
       removalPolicy: cdk.RemovalPolicy.DESTROY, // destroy the resources when the stack deletes
@@ -31,11 +29,11 @@ export class DualQueue extends Construct {
         // TODO: figure out how to set this to BY_QUEUE
         redrivePermission: sqs.RedrivePermission.ALLOW_ALL,
       },
+      ...props.dlq,
     });
 
-    // create sqs url-queue
-    this.src = new sqs.Queue(this, makeId(SRC_NAME), {
-      queueName: makeQueueName(SRC_NAME),
+    // create sqs url queue
+    this.src = new sqs.Queue(this, makeId(SRC_KIND), {
       encryption: sqs.QueueEncryption.SQS_MANAGED, // encryption at rest (phew, sqs will manage the data encryption keys)
       dataKeyReuse: cdk.Duration.days(1), // set sqs key reuse period to 1 day to minimize KMS API calls and keep costs low
       enforceSSL: true, // encryption in transit
@@ -51,6 +49,7 @@ export class DualQueue extends Construct {
         maxReceiveCount: 2, // retry twice before moving to DLQ to accommodate transient errors
         queue: this.dlq, // the DLQ
       },
+      ...props.src,
     });
   }
 }

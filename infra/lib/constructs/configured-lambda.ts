@@ -9,8 +9,6 @@ const HANDLE_REQUESTS = "HandleRequests";
 
 export interface ConfiguredFunctionProps extends Partial<lambda.FunctionProps> {
   environment: { [key: string]: string } | undefined;
-  name: string;
-  nonce: string;
   securityGroup: ec2.SecurityGroup;
   vpc: ec2.Vpc;
   vpcSubnets: ec2.SubnetSelection;
@@ -18,15 +16,15 @@ export interface ConfiguredFunctionProps extends Partial<lambda.FunctionProps> {
 
 export class ConfiguredFunction extends lambda.Function {
   constructor(scope: Construct, id: string, props: ConfiguredFunctionProps) {
-    helpers.doMakeBuildLambda(props.name);
-    const functionName = `${props.name}-${props.nonce}`;
+    let makeId = (kind: string): string => `${id}-${kind}`;
+
+    helpers.doMakeBuildLambda(id);
     super(scope, id, {
-      functionName,
-      code: lambda.Code.fromAsset(helpers.getLambdaBuildAssetPath(props.name)), // GoLang code
+      code: lambda.Code.fromAsset(helpers.getLambdaBuildAssetPath(id)), // GoLang code
       handler: HANDLE_REQUESTS, // handler function. Can be named anything, happens to be "Handler"
       runtime: lambda.Runtime.PROVIDED_AL2023, // recommended
       allowPublicSubnet: false, // network isolation => private subnets only
-      logGroup: new TempLogGroup(scope, `${functionName}-log-group`), // custom log group to simplify stack deletion
+      logGroup: new TempLogGroup(scope, makeId("log-group")), // custom log group to simplify stack deletion
       memorySize: 512, // 512 MB
       reservedConcurrentExecutions: 1, // 1 concurrent execution since this is manually triggered
       retryAttempts: 0, // don't retry, error => failed execution

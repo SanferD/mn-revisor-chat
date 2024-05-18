@@ -5,7 +5,6 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { ConfiguredFunction } from "../constructs/configured-lambda";
@@ -14,75 +13,54 @@ import { TempLogGroup } from "../constructs/temp-log-group";
 import * as constants from "../constants";
 import * as helpers from "../helpers";
 
-const URL_SQS_NAME = "url-to-crawl";
-const TRIGGER_CRAWLER_NAME = "trigger_crawler";
-const CRAWLER_NAME = "crawler";
 const CRAWLER_STREAM_PREFIX = "crawler-";
+const CRAWLER_CMD = "crawler";
+const TRIGGER_CRAWLER_ID = "trigger_crawler";
+const CRAWLER_CLUSTER_ID = "crawler-cluster";
+const CRAWLER_TASK_DEFINITION_ID = "crawler-task-definition";
+const CRAWLER_DOCKER_IMG_ASSET_ID = "crawler-dkr-img-asset";
+const CRAWLER_CONTAINER_DFN_ID = "crawler-container-dfn";
+const CRAWLER_SERVICE_ID = "crawler-service";
+const CRAWLER_SCALABLE_METRIC_ID = "crawler-scalable-metric";
+const CRAWLER_TEMP_LOG_GROUP_ID = `${CRAWLER_CONTAINER_DFN_ID}-log-group`;
 
 export interface CrawlerStackProps extends cdk.StackProps {
-  nonce: string;
   securityGroup: ec2.SecurityGroup;
   vpc: ec2.Vpc;
   privateIsolatedSubnets: ec2.SelectedSubnets;
   privateWithEgressSubnets: ec2.SelectedSubnets;
   mainBucket: s3.Bucket;
+  table1: dynamodb.TableV2;
+  urlDQ: DualQueue;
+  rawEventsDQ: DualQueue;
+  toIndexDQ: DualQueue;
 }
 
 export class CrawlerStack extends cdk.Stack {
-  readonly dualQueue: DualQueue;
-  readonly seenUrlTable: dynamodb.TableV2;
-  readonly triggerCrawlerFunction: ConfiguredFunction;
-
   constructor(scope: Construct, id: string, props: CrawlerStackProps) {
     super(scope, id, props);
     props = { ...props };
 
-    // setup dynamodb seen-url
-    let billing = dynamodb.Billing.provisioned({
-      // estimated cost ~$2
-      readCapacity: dynamodb.Capacity.autoscaled({ maxCapacity: 5 }),
-      writeCapacity: dynamodb.Capacity.autoscaled({ maxCapacity: 3 }),
-    });
-    this.seenUrlTable = new dynamodb.TableV2(this, "table-1", {
-      tableName: `table-1-${props.nonce}`,
-      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING }, // generic pk to facilitate single table design, i.e. overloaded hash key
-      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING }, // generic sk to facilitate single table design, i.e. overloaded range key
-      billing,
-      deletionProtection: false, // simplify cleanup
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // delete table on stack deletion for easy cleanup of demo
-      timeToLiveAttribute: constants.TTL_ATTRIBUTE, // application sets TTL to reduce storage costs
-    });
-
     // setup SQS infrastructure
-    this.dualQueue = new DualQueue(this, URL_SQS_NAME, {
-      name: URL_SQS_NAME,
-      nonce: props.nonce,
-    });
 
     // setup Lambda to trigger crawler
-    this.triggerCrawlerFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_NAME, {
-      environment: {
-        URL_SQS_ARN: this.dualQueue.src.queueArn,
-        TABLE_1_ARN: this.seenUrlTable.tableArn,
-      },
-      name: TRIGGER_CRAWLER_NAME,
-      nonce: props.nonce,
+    const triggerCrawlerFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_ID, {
+      environment: helpers.getEnvironment(props),
       securityGroup: props.securityGroup,
       vpc: props.vpc,
       vpcSubnets: props.privateIsolatedSubnets,
     });
 
     //// configure trigger-crawler permissions
-    this.dualQueue.src.grantPurge(this.triggerCrawlerFunction);
-    this.dualQueue.src.grantSendMessages(this.triggerCrawlerFunction);
-    this.seenUrlTable.grantReadWriteData(this.triggerCrawlerFunction);
-    this.triggerCrawlerFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
+    props.urlDQ.src.grantPurge(triggerCrawlerFunction);
+    props.urlDQ.src.grantSendMessages(triggerCrawlerFunction);
+    props.table1.grantReadWriteData(triggerCrawlerFunction);
+    triggerCrawlerFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     // setup ecs to run crawlers
 
     //// setup crawler cluster
-    const crawlerCluster = new ecs.Cluster(this, "crawler-cluster", {
-      clusterName: `crawler-cluster-${props.nonce}`,
+    const crawlerCluster = new ecs.Cluster(this, CRAWLER_CLUSTER_ID, {
       containerInsights: true, // enable container insights
       enableFargateCapacityProviders: true, // use Fargate for capacity management
       vpc: props.vpc, // over VPC
@@ -91,44 +69,37 @@ export class CrawlerStack extends cdk.Stack {
     //// setup task definition
 
     ////// task definition
-    const crawlerTaskDefinition = new ecs.TaskDefinition(this, "crawler-task-definition", {
+    const crawlerTaskDefinition = new ecs.TaskDefinition(this, CRAWLER_TASK_DEFINITION_ID, {
       compatibility: ecs.Compatibility.FARGATE,
       cpu: "512", // 0.5vCPU cpu
       memoryMiB: "1024", // 1GB memory
-      family: `crawler-task-dfn-family-${props.nonce}`,
       networkMode: ecs.NetworkMode.AWS_VPC, // only supported option for AWS Fargate
     });
 
     ////// configure crawler service permissions
-    this.dualQueue.src.grantConsumeMessages(crawlerTaskDefinition.taskRole);
-    this.seenUrlTable.grantReadWriteData(crawlerTaskDefinition.taskRole);
-    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole, constants.RAW_OBJECT_PREFIX + "/*");
+    props.urlDQ.src.grantConsumeMessages(crawlerTaskDefinition.taskRole);
+    props.table1.grantReadWriteData(crawlerTaskDefinition.taskRole);
+    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole, constants.RAW_OBJECT_PREFIX_PATH);
     crawlerTaskDefinition.addToTaskRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     ////// docker image asset
-    helpers.doMakeBuildEcs(CRAWLER_NAME);
-    const crawlerDockerImageAsset = new ecr_assets.DockerImageAsset(this, "crawler-docker-image-asset", {
+    helpers.doMakeBuildEcs(CRAWLER_CMD);
+    const crawlerDockerImageAsset = new ecr_assets.DockerImageAsset(this, CRAWLER_DOCKER_IMG_ASSET_ID, {
       directory: helpers.getCodeDirPath(),
       buildArgs: {
-        BINARY_PATH: helpers.getBuildAssetPathRelativeToCodeDir(CRAWLER_NAME),
+        BINARY_PATH: helpers.getBuildAssetPathRelativeToCodeDir(CRAWLER_CMD),
       },
-      file: helpers.getCmdDockerfilePathRelativeToCodeDir(CRAWLER_NAME),
+      file: helpers.getCmdDockerfilePathRelativeToCodeDir(CRAWLER_CMD),
     });
 
     ////// crawler log group
-    const crawlerEcsLogGroup = new TempLogGroup(this, "crawler-ecs-log-group");
+    const crawlerEcsLogGroup = new TempLogGroup(this, CRAWLER_TEMP_LOG_GROUP_ID);
 
     ////// setup container definition that uses docker image asset and task definition
-    new ecs.ContainerDefinition(this, "crawler-container-definition", {
-      containerName: `crawler-container-definition-${props.nonce}`,
+    new ecs.ContainerDefinition(this, CRAWLER_CONTAINER_DFN_ID, {
       image: ecs.ContainerImage.fromDockerImageAsset(crawlerDockerImageAsset),
       taskDefinition: crawlerTaskDefinition,
-      environment: {
-        BUCKET_NAME: props.mainBucket.bucketName,
-        RAW_PATH_PREFIX: constants.RAW_OBJECT_PREFIX,
-        TABLE_1_ARN: this.seenUrlTable.tableArn,
-        URL_SQS_ARN: this.dualQueue.src.queueArn,
-      },
+      environment: helpers.getEnvironment(props),
       logging: new ecs.AwsLogDriver({
         logGroup: crawlerEcsLogGroup,
         streamPrefix: CRAWLER_STREAM_PREFIX,
@@ -136,7 +107,7 @@ export class CrawlerStack extends cdk.Stack {
     });
 
     //// setup crawler fargate service
-    const crawlerFargateService = new ecs.FargateService(this, "crawler-fargate-service", {
+    const crawlerFargateService = new ecs.FargateService(this, CRAWLER_SERVICE_ID, {
       cluster: crawlerCluster,
       taskDefinition: crawlerTaskDefinition,
       assignPublicIp: false, // network isolation => tasks over private subnets only
@@ -146,7 +117,6 @@ export class CrawlerStack extends cdk.Stack {
       circuitBreaker: { enable: true, rollback: true }, // rollback on failure
       deploymentController: { type: ecs.DeploymentControllerType.ECS }, // i.e. drop some tasks and replace with newer versions
       securityGroups: [props.securityGroup],
-      serviceName: `crawler-fargate-service-${props.nonce}`,
       vpcSubnets: props.privateWithEgressSubnets,
     });
 
@@ -161,7 +131,7 @@ export class CrawlerStack extends cdk.Stack {
         sqs_messages_count: new cloudwatch.Metric({
           namespace: "AWS/SQS",
           metricName: "ApproximateNumberOfMessagesVisible",
-          dimensionsMap: { QueueName: this.dualQueue.src.queueName },
+          dimensionsMap: { QueueName: props.urlDQ.src.queueName },
           statistic: "max",
           period: cdk.Duration.minutes(1),
         }),
@@ -179,7 +149,7 @@ export class CrawlerStack extends cdk.Stack {
       label: "Backlog per Task",
     });
 
-    crawlerScalableTaskCount.scaleOnMetric("crawler-scalable-metric", {
+    crawlerScalableTaskCount.scaleOnMetric(CRAWLER_SCALABLE_METRIC_ID, {
       metric: backlogPerTaskMetric, // x >= 0 (always positive)
       scalingSteps: [
         { lower: 0, upper: 1, change: -1 }, // x == 0; then -1
