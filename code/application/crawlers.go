@@ -9,21 +9,39 @@ import (
 	"time"
 )
 
+const purgeDuration = 120 * time.Second
 const sleepSecondsDelta = 2
 const sleepSecondsMin = 3
 
-func TriggerCrawler(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenURLStore, logger core.Logger) error {
-	logger.Info("purging url queue")
+func TriggerCrawler(ctx context.Context, seedURLs []string, urlQueue core.URLQueue, rawEventsQueue core.RawEventsQueue, seenURLStore core.SeenURLStore, logger core.Logger) error {
+	logger.Info("clearing url queue")
 	if err := urlQueue.Clear(ctx); err != nil {
-		return fmt.Errorf("error on queue Purge: %v", err)
+		return fmt.Errorf("error on clearing queue: %v", err)
 	}
+	logger.Info("clearing raw events queue")
+	if err := rawEventsQueue.Clear(ctx); err != nil {
+		return fmt.Errorf("error on clearing queue: %v", err)
+	}
+	clearStart := time.Now()
 	logger.Info("deleting all seen url items")
 	if err := seenURLStore.DeleteAll(ctx); err != nil {
 		return fmt.Errorf("error on table1 DeleteAll: %v", err)
 	}
-	logger.Info("sending '%s' to url queue", MNRevisorStatutesURL)
-	if err := urlQueue.SendURL(ctx, MNRevisorStatutesURL); err != nil {
-		return fmt.Errorf("error on queue SendBody: %v", err)
+	logger.Info("waiting for queues to purge")
+	timeLeft := purgeDuration - time.Since(clearStart) + 2*time.Second
+	if timeLeft > 0 {
+		logger.Info("sleeping for %v", timeLeft)
+		time.Sleep(timeLeft)
+	}
+	logger.Info("received seedURLs=%v", seedURLs)
+	if len(seedURLs) == 0 {
+		seedURLs = []string{MNRevisorStatutesURL}
+	}
+	for _, seedURL := range seedURLs {
+		logger.Info("sending '%s' to url queue", seedURL)
+		if err := urlQueue.SendURL(ctx, seedURL); err != nil {
+			return fmt.Errorf("error on queue SendBody: %v", err)
+		}
 	}
 	logger.Info("trigger success")
 	return nil

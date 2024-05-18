@@ -14,10 +14,15 @@ import (
 )
 
 var (
-	logger       core.Logger
-	seenURLStore core.SeenURLStore
-	urlQueue     core.URLQueue
+	logger         core.Logger
+	seenURLStore   core.SeenURLStore
+	urlQueue       core.URLQueue
+	rawEventsQueue core.RawEventsQueue
 )
+
+type URLsEvent struct {
+	Urls []string `json:"urls"`
+}
 
 func init() {
 	ctx := context.Background()
@@ -32,9 +37,14 @@ func init() {
 		log.Fatalf("error on initialize multilogger: %v\n", err)
 	}
 
-	urlQueue, err = queues.InitializeURLSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	urlQueue, err = queues.InitializeSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	if err != nil {
-		logger.Fatal("error on initialize-sqs: %v", err)
+		logger.Fatal("error on url initialize-sqs: %v", err)
+	}
+
+	rawEventsQueue, err = queues.InitializeSQSHelper(ctx, mySettings.RawEventsSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	if err != nil {
+		logger.Fatal("error on raw-events initialize-sqs: %v", err)
 	}
 
 	seenURLStore, err = stores.InitializeTable1(ctx, mySettings.Table1ARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
@@ -44,8 +54,9 @@ func init() {
 
 }
 
-func HandleRequest(ctx context.Context) error {
-	if err := application.TriggerCrawler(ctx, urlQueue, seenURLStore, logger); err != nil {
+func HandleRequest(ctx context.Context, urlsEvent URLsEvent) error {
+	logger.Info("Received event", urlsEvent)
+	if err := application.TriggerCrawler(ctx, urlsEvent.Urls, urlQueue, rawEventsQueue, seenURLStore, logger); err != nil {
 		logger.Fatal("error on trigger-crawler: %v", err)
 	}
 	return nil
