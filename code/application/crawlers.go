@@ -39,12 +39,12 @@ func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenUR
 
 		// get URL
 		logger.Info("receiving next url from queue")
-		urlQueueMessage, err := urlQueue.ReceiveURLQueueMessage(ctx)
+		urlQueueMessage, err := urlQueue.ReceiveMessage(ctx)
 		if err != nil {
 			logger.Error("error on receiveURL: %v", err)
 			continue
 		}
-		if urlQueueMessage == nil {
+		if urlQueueMessage.IsEmpty {
 			logger.Info("queue is empty")
 			continue
 		}
@@ -61,7 +61,7 @@ func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenUR
 		if hasURL {
 			// url is seen, delete the message
 			logger.Info("URL='%s' is seen, skipping...", url)
-			if err = urlQueue.DeleteURLQueueMessage(ctx, urlQueueMessage); err != nil {
+			if err = urlQueue.DeleteMessage(ctx, urlQueueMessage); err != nil {
 				logger.Error("error on deleting queue message: %v", err)
 			}
 			sleepSeconds = 0.1 // sleep for 100ms, then check the next url
@@ -97,7 +97,7 @@ func Crawl(ctx context.Context, urlQueue core.URLQueue, seenURLStore core.SeenUR
 
 		// delete url from queue
 		logger.Info("deleting url='%s' from queue", url)
-		if err = urlQueue.DeleteURLQueueMessage(ctx, urlQueueMessage); err != nil {
+		if err = urlQueue.DeleteMessage(ctx, urlQueueMessage); err != nil {
 			logger.Error("error on DeleteQueueMessage: %v", err)
 			continue
 		}

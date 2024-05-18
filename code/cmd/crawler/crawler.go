@@ -40,7 +40,7 @@ func Crawl() error {
 	if err != nil {
 		logger.Fatal("error initializing table1: %v", err)
 	}
-	if urlQueue, err = queues.InitializeURLSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint); err != nil {
+	if urlQueue, err = queues.InitializeSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint); err != nil {
 		logger.Fatal("error initializing url queue: %v", err)
 	}
 	rawDataStore, err = stores.InitializeS3Helper(ctx, mySettings.BucketName, mySettings.RawPathPrefix, mySettings.ChunkPathPrefix, mySettings.ContextTimeout, mySettings.LocalEndpoint)

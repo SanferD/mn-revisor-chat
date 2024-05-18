@@ -50,7 +50,7 @@ func init() {
 		log.Fatalf("error on initialize multilogger: %v\n", err)
 	}
 
-	urlQueue, err = queues.InitializeURLSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
+	urlQueue, err = queues.InitializeSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
 	if err != nil {
 		logger.Fatal("error on initialize-sqs: %v", err)
 	}

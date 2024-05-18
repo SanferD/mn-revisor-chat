@@ -1,13 +1,12 @@
 package queues
 
 import (
+	"code/core"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"code/core"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -16,57 +15,15 @@ import (
 	smithy "github.com/aws/smithy-go"
 )
 
-type URLSQSHelper struct {
-	SQSHelper
-}
-
-func InitializeURLSQSHelper(ctx context.Context, queueArn string, timeout time.Duration, endpoint *string) (*URLSQSHelper, error) {
-	sqsHelper, err := InitializeSQSHelper(ctx, queueArn, timeout, endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("error on InitializeSQS: %v", err)
-	}
-	return &URLSQSHelper{SQSHelper: *sqsHelper}, nil
-}
-
-func (helper *URLSQSHelper) Clear(ctx context.Context) error {
-	if err := helper.Purge(ctx); err != nil {
-		return fmt.Errorf("error on Purge: %v", err)
-	}
-	return nil
-}
-
-func (helper *URLSQSHelper) SendURL(ctx context.Context, url string) error {
-	if err := helper.SendBody(ctx, url); err != nil {
-		return fmt.Errorf("error on SendBody: %v", err)
-	}
-	return nil
-}
-
-func (urlSQSHelper *URLSQSHelper) ReceiveURLQueueMessage(ctx context.Context) (*core.URLQueueMessage, error) {
-	queueMessage, err := urlSQSHelper.ReceiveQueueMessage(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error on ReceiveURLQueueMessage: %v", err)
-	}
-	if queueMessage == nil {
-		return nil, nil
-	}
-	return &core.URLQueueMessage{QueueMessage: *queueMessage}, nil
-}
-
-func (urlSQSHelper *URLSQSHelper) DeleteURLQueueMessage(ctx context.Context, urlQueueMessage *core.URLQueueMessage) error {
-	if err := urlSQSHelper.DeleteQueueMessage(ctx, &urlQueueMessage.QueueMessage); err != nil {
-		return fmt.Errorf("error on DeleteQueueMessage: %v", err)
-	}
-	return nil
-}
-
 type SQSHelper struct {
 	client   *sqs.Client
 	queueURL string
 	timeout  time.Duration
 }
 
-func InitializeSQSHelper(ctx context.Context, queueArn string, timeout time.Duration, endpoint *string) (*SQSHelper, error) {
+var emptyQMsg = core.QueueMessage{IsEmpty: true}
+
+func InitializeSQSHelper(ctx context.Context, queueARN string, timeout time.Duration, endpoint *string) (*SQSHelper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -78,14 +35,14 @@ func InitializeSQSHelper(ctx context.Context, queueArn string, timeout time.Dura
 			o.BaseEndpoint = aws.String(*endpoint)
 		}
 	})
-	queueURL, err := getURLFromARN(ctx, client, strings.TrimSpace(queueArn), timeout)
+	queueURL, err := getURLFromARN(ctx, client, strings.TrimSpace(queueARN), timeout)
 	if err != nil {
-		return nil, fmt.Errorf("error getting QueueURL for QueueARN='%s': %v", queueArn, err)
+		return nil, fmt.Errorf("error getting QueueURL for QueueARN='%s': %v", queueARN, err)
 	}
 	return &SQSHelper{client: client, queueURL: queueURL, timeout: timeout}, nil
 }
 
-func getURLFromARN(ctx context.Context, client *sqs.Client, queueArn string, timeout time.Duration) (string, error) {
+func getURLFromARN(ctx context.Context, client *sqs.Client, queueARN string, timeout time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	paginator := sqs.NewListQueuesPaginator(client, &sqs.ListQueuesInput{})
@@ -116,61 +73,75 @@ func getURLFromARN(ctx context.Context, client *sqs.Client, queueArn string, tim
 			}
 
 			_queueArn := strings.TrimSpace(attribOutput.Attributes[string(types.QueueAttributeNameQueueArn)])
-			if _queueArn == queueArn {
+			if _queueArn == queueARN {
 				return queueURL, nil
 			}
 		}
 	}
-	return "", fmt.Errorf("queue with queue-arn='%s' not found", queueArn)
+	return "", fmt.Errorf("queue with queue-arn='%s' not found", queueARN)
 }
 
-func (sqsHelper *SQSHelper) Purge(ctx context.Context) error {
+func (sqsHelper *SQSHelper) SendURL(ctx context.Context, url string) error {
+	return sqsHelper.SendMessage(ctx, core.QueueMessage{Body: url})
+}
+
+func (sqsHelper *SQSHelper) DeleteEvent(ctx context.Context, handle string) error {
+	return sqsHelper.DeleteMessage(ctx, core.QueueMessage{Handle: handle})
+}
+
+func (sqsHelper *SQSHelper) Clear(ctx context.Context) error {
+	return sqsHelper.purge(ctx)
+}
+
+func (sqsHelper *SQSHelper) SendMessage(ctx context.Context, queueMessage core.QueueMessage) error {
 	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
 	defer cancel()
-	_, err := sqsHelper.client.PurgeQueue(ctx, &sqs.PurgeQueueInput{QueueUrl: &sqsHelper.queueURL})
+	sendMsgInp := sqs.SendMessageInput{QueueUrl: &sqsHelper.queueURL, MessageBody: &queueMessage.Body}
+	_, err := sqsHelper.client.SendMessage(ctx, &sendMsgInp)
 	if err != nil {
+		return fmt.Errorf("sqs send message error: %v", err)
+	}
+	return nil
+}
+
+func (sqsHelper *SQSHelper) ReceiveMessage(ctx context.Context) (core.QueueMessage, error) {
+	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
+	defer cancel()
+	recvMsgInp := sqs.ReceiveMessageInput{QueueUrl: &sqsHelper.queueURL, MaxNumberOfMessages: 1}
+	recvMsgOut, err := sqsHelper.client.ReceiveMessage(ctx, &recvMsgInp)
+	if err != nil {
+		return emptyQMsg, fmt.Errorf("error on sqs receive message: %v", err)
+	}
+	if len(recvMsgOut.Messages) == 0 {
+		return emptyQMsg, nil
+	}
+	message := recvMsgOut.Messages[0]
+	ret := core.QueueMessage{Body: *message.Body, Handle: *message.ReceiptHandle}
+	return ret, nil
+}
+
+func (sqsHelper *SQSHelper) DeleteMessage(ctx context.Context, queueMessage core.QueueMessage) error {
+	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
+	defer cancel()
+	deleteMsgInp := &sqs.DeleteMessageInput{QueueUrl: &sqsHelper.queueURL, ReceiptHandle: &queueMessage.Handle}
+	_, err := sqsHelper.client.DeleteMessage(ctx, deleteMsgInp)
+	if err != nil {
+		return fmt.Errorf("error on sqs delete message: %v", err)
+	}
+	return nil
+}
+
+func (sqsHelper *SQSHelper) purge(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
+	defer cancel()
+	purgeQueueInp := sqs.PurgeQueueInput{QueueUrl: &sqsHelper.queueURL}
+	_, err := sqsHelper.client.PurgeQueue(ctx, &purgeQueueInp)
+	if err != nil {
+		var apiErr smithy.APIError
+		if ok := errors.As(err, &apiErr); ok && apiErr.ErrorCode() == "PurgeQueueInProgress" {
+			return nil
+		}
 		return fmt.Errorf("error purging queue for queueURL=%s: %v", sqsHelper.queueURL, err)
 	}
 	return nil
-}
-
-func (sqsHelper *SQSHelper) SendBody(ctx context.Context, body string) error {
-	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
-	defer cancel()
-	_, err := sqsHelper.client.SendMessage(ctx, &sqs.SendMessageInput{QueueUrl: &sqsHelper.queueURL, MessageBody: &body})
-	if err != nil {
-		return fmt.Errorf("sqs SendMessage error: %v", err)
-	}
-	return nil
-}
-
-func (sqsHelper *SQSHelper) ReceiveQueueMessage(ctx context.Context) (*core.QueueMessage, error) {
-	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
-	defer cancel()
-	output, err := sqsHelper.client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &sqsHelper.queueURL, MaxNumberOfMessages: 1})
-	if err != nil {
-		return nil, fmt.Errorf("sqs ReceiveMesasge error: %v", err)
-	}
-	if len(output.Messages) == 0 {
-		return nil, nil
-	}
-	message := output.Messages[0]
-	sqsMessage := &core.QueueMessage{Body: *message.Body, ID: *message.MessageId, Handle: *message.ReceiptHandle}
-	return sqsMessage, nil
-}
-
-func (sqsHelper *SQSHelper) DeleteQueueMessage(ctx context.Context, queueMessage *core.QueueMessage) error {
-	return sqsHelper.DeleteMessage(ctx, queueMessage.Handle)
-}
-
-func (sqsHelper *SQSHelper) DeleteMessage(ctx context.Context, receiptHandle string) error {
-	ctx, cancel := context.WithTimeout(ctx, sqsHelper.timeout)
-	defer cancel()
-	deleteMessageInput := &sqs.DeleteMessageInput{QueueUrl: &sqsHelper.queueURL, ReceiptHandle: &receiptHandle}
-	_, err := sqsHelper.client.DeleteMessage(ctx, deleteMessageInput)
-	if err != nil {
-		return fmt.Errorf("error on DeleteMessage: %v", err)
-	}
-	return nil
-
 }

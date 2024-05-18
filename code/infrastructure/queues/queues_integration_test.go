@@ -1,6 +1,7 @@
 package queues
 
 import (
+	"code/core"
 	"code/infrastructure/settings"
 	"context"
 	"testing"
@@ -8,91 +9,69 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSQS(t *testing.T) {
-	mySettings, err := settings.GetSettings()
-	assert.NoError(t, err, "error on GetSettings: %v", err)
+const (
+	msg1 = "msg-1"
+	msg2 = "msg-2"
+	msg3 = "msg-3"
+	url1 = "http://hello.com"
+)
 
+func TestQueues(t *testing.T) {
+	assert := assert.New(t)
+	myS, err := settings.GetSettings()
+	assert.NoError(err, "error on get settings: %v", err)
 	ctx := context.Background()
-
-	t.Run("testing SQSHelper", func(t *testing.T) {
-		sqsHelper, err := InitializeSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
-		assert.NoError(t, err, "error on InitializeSQSHelper: %v", err)
-
-		const msg1 = "msg-1"
-		const msg2 = "msg-2"
-		const msg3 = "msg-3"
-		msgs := []string{msg1, msg2, msg3}
-
-		t.Run("test can send and receive messages", func(t *testing.T) {
-			for _, msg := range msgs {
-				err := sqsHelper.SendBody(ctx, msg)
-				assert.NoError(t, err, "error on SendBody: %v", err)
-			}
-			for _, msg := range msgs {
-				queueMessage, err := sqsHelper.ReceiveQueueMessage(ctx)
-				assert.NoError(t, err, "error on ReceiveQueueMessage: %v", err)
-				assert.NotEmpty(t, queueMessage, "queueMessage on ReceiveQueueMessage is nil but should be %s", msg)
-				assert.Equal(t, msg, queueMessage.Body, "msg=%s != body=%s", msg, queueMessage.Body)
-
-				err = sqsHelper.DeleteQueueMessage(ctx, queueMessage)
-				assert.NoError(t, err, "error on DeleteQueueMessage: %v", err)
-			}
-			queueMessage, err := sqsHelper.ReceiveQueueMessage(ctx)
-			assert.NoError(t, err, "error on ReceiveQueueMessage: %v", err)
-			assert.Empty(t, queueMessage, "queueMessage on ReceiveQueueMessage should be nil")
+	t.Run("test SQSHelper", func(t *testing.T) {
+		sqsHelper, err := InitializeSQSHelper(ctx, myS.URLSQSARN, myS.ContextTimeout, myS.LocalEndpoint)
+		assert.NoError(err, "error on initialize sqs helper: %v", err)
+		t.Run("test SendMessage, ReceiveMessage, DeleteMessage", func(t *testing.T) {
+			var err error
+			var msg core.QueueMessage
+			err = sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg1})
+			assert.NoError(err, "error on send message 1: %v", err)
+			msg, err = sqsHelper.ReceiveMessage(ctx)
+			assert.NoError(err, "error on receive message: %v", err)
+			assert.False(msg.IsEmpty, "message should not be empty")
+			assert.Equal(msg1, msg.Body, "messages should be equal")
+			err = sqsHelper.DeleteMessage(ctx, msg)
+			assert.NoError(err, "error on delete message: %v", err)
+			msg, err = sqsHelper.ReceiveMessage(ctx)
+			assert.NoError(err, "error on receive message: %v", err)
+			assert.True(msg.IsEmpty, "message should be empty")
 		})
 
-		t.Run("test can purge", func(t *testing.T) {
-			for _, msg := range msgs {
-				err := sqsHelper.SendBody(ctx, msg)
-				assert.NoError(t, err, "error on SendBody: %v", err)
-			}
-			err := sqsHelper.Purge(ctx)
-			assert.NoError(t, err, "error on Purge")
-			queueMessage, err := sqsHelper.ReceiveQueueMessage(ctx)
-			assert.NoError(t, err, "error on ReceiveQueueMessage: %v", err)
-			assert.Empty(t, queueMessage, "queueMessage on ReceiveQueueMessage should be nil")
-		})
-	})
-
-	t.Run("testing URLSQSHelper", func(t *testing.T) {
-		urlSQSHelper, err := InitializeURLSQSHelper(ctx, mySettings.URLSQSARN, mySettings.ContextTimeout, mySettings.LocalEndpoint)
-		assert.NoError(t, err, "error on InitializeSQSHelper: %v", err)
-
-		const url1 = "https://url1.com"
-		const url2 = "https://url2.com"
-		const url3 = "https://url3.com"
-		urls := []string{url1, url2, url3}
-
-		t.Run("test send and receive URL queue messages", func(t *testing.T) {
-			for _, url := range urls {
-				err := urlSQSHelper.SendURL(ctx, url)
-				assert.NoError(t, err, "error on SendBody: %v", err)
-			}
-			for _, url := range urls {
-				urlQueueMessage, err := urlSQSHelper.ReceiveQueueMessage(ctx)
-				assert.NoError(t, err, "error on ReceiveQueueMessage: %v", err)
-				assert.NotEmpty(t, urlQueueMessage, "queueMessage on ReceiveQueueMessage is nil but should be %s", url)
-				assert.Equal(t, url, urlQueueMessage.Body, "url=%s != body=%s", url, urlQueueMessage.Body)
-
-				err = urlSQSHelper.DeleteQueueMessage(ctx, urlQueueMessage)
-				assert.NoError(t, err, "error on DeleteQueueMessage: %v", err)
-			}
-			queueMessage, err := urlSQSHelper.ReceiveQueueMessage(ctx)
-			assert.NoError(t, err, "error on ReceiveQueueMessage: %v", err)
-			assert.Empty(t, queueMessage, "queueMessage on ReceiveQueueMessage should be nil")
+		t.Run("test Purge", func(t *testing.T) {
+			ctx := context.Background()
+			sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg1})
+			sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg2})
+			sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg3})
+			sqsHelper.purge(ctx)
+			msg, _ := sqsHelper.ReceiveMessage(ctx)
+			assert.True(msg.IsEmpty, "message should've been empty but isn't")
 		})
 
-		t.Run("test can clear", func(t *testing.T) {
-			for _, url := range urls {
-				err := urlSQSHelper.SendURL(ctx, url)
-				assert.NoError(t, err, "error on SendBody: %v", err)
-			}
-			err := urlSQSHelper.Clear(ctx)
-			assert.NoError(t, err, "no error on clear expected, got %v", err)
-			urlQueueMessage, err := urlSQSHelper.ReceiveQueueMessage(ctx)
-			assert.NoError(t, err, "error on ReceiveQueueMessage: %v", err)
-			assert.Empty(t, urlQueueMessage, "queueMessage on ReceiveQueueMessage should be nil")
+		t.Run("test SendURL, DeleteEvent", func(t *testing.T) {
+			var err error
+			var msg core.QueueMessage
+			ctx := context.Background()
+			err = sqsHelper.SendURL(ctx, url1)
+			assert.NoError(err, "error on send url: %v", err)
+			msg, _ = sqsHelper.ReceiveMessage(ctx)
+			err = sqsHelper.DeleteEvent(ctx, msg.Handle)
+			assert.NoError(err, "error on delete event: %v", err)
+		})
+
+		t.Run("test Clear", func(t *testing.T) {
+			var err error
+			var msg core.QueueMessage
+			ctx := context.Background()
+			sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg1})
+			sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg2})
+			sqsHelper.SendMessage(ctx, core.QueueMessage{Body: msg3})
+			err = sqsHelper.Clear(ctx)
+			assert.NoError(err, "error on clear: %v", err)
+			msg, _ = sqsHelper.ReceiveMessage(ctx)
+			assert.True(msg.IsEmpty, "message should be empty")
 		})
 	})
 }

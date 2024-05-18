@@ -5,14 +5,10 @@ import (
 	"io"
 )
 
-type URLQueueMessage struct {
-	QueueMessage
-}
-
 type QueueMessage struct {
-	ID     string
-	Body   string
-	Handle string
+	Body    string
+	Handle  string
+	IsEmpty bool
 }
 
 type MNRevisorPageKind int
@@ -52,14 +48,20 @@ type InterruptWatcher interface {
 }
 
 type URLQueue interface {
-	Clear(context.Context) error
 	SendURL(context.Context, string) error
-	ReceiveURLQueueMessage(context.Context) (*URLQueueMessage, error)
-	DeleteURLQueueMessage(context.Context, *URLQueueMessage) error
+	Queue
 }
 
 type RawEventsQueue interface {
-	DeleteMessage(ctx context.Context, receiptHandle string) error
+	DeleteEvent(context.Context, string) error
+	Queue
+}
+
+type Queue interface {
+	Clear(context.Context) error
+	SendMessage(context.Context, QueueMessage) error
+	ReceiveMessage(context.Context) (QueueMessage, error)
+	DeleteMessage(context.Context, QueueMessage) error
 }
 
 type SeenURLStore interface {
