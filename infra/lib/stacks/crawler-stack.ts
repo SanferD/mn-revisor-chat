@@ -61,7 +61,7 @@ export class CrawlerStack extends cdk.Stack {
     ////// configure crawler service permissions
     props.urlDQ.src.grantConsumeMessages(crawlerTaskDefinition.taskRole);
     props.table1.grantReadWriteData(crawlerTaskDefinition.taskRole);
-    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole, constants.RAW_OBJECT_PREFIX_PATH);
+    props.mainBucket.grantPut(crawlerTaskDefinition.taskRole, constants.RAW_OBJECT_PREFIX_PATH_WILDCARD);
     crawlerTaskDefinition.addToTaskRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     ////// docker image asset
