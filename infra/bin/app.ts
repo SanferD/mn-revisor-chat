@@ -1,19 +1,15 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import * as conf from "../lib/config";
-import { CrawlerStack } from "../lib/stacks/crawler-stack";
-import { IndexerStack } from "../lib/stacks/indexer-stack";
-import { ScraperStack } from "../lib/stacks/scraper-stack";
-import { StatefulStack } from "../lib/stacks/stateful-stack";
-import { VpcStack } from "../lib/stacks/vpc-stack";
+import * as stacks from "../lib/stacks";
 
 function main(app: cdk.App, config: conf.Config) {
   console.log("config: ", config);
 
   const i = (x: string) => `${x}-${config.nonce}`;
 
-  const statefulStack = new StatefulStack(app, i("stateful-stack"), {});
-  const vpcStack = new VpcStack(app, i("vpc-stack"), { azCount: config.azCount });
+  const statefulStack = new stacks.StatefulStack(app, i("stateful-stack"), {});
+  const vpcStack = new stacks.VpcStack(app, i("vpc-stack"), { azCount: config.azCount });
 
   const commonProps = {
     securityGroup: vpcStack.securityGroup,
@@ -27,15 +23,18 @@ function main(app: cdk.App, config: conf.Config) {
     toIndexDQ: statefulStack.toIndexDQ,
   };
 
-  new CrawlerStack(app, i("crawler-stack"), {
+  new stacks.TriggerCrawlerStack(app, i("trigger-crawler-stack"), {
+    ...commonProps,
+  });
+  new stacks.CrawlerStack(app, i("crawler-stack"), {
     ...commonProps,
   });
 
-  new ScraperStack(app, i("scraper-stack"), {
+  new stacks.ScraperStack(app, i("scraper-stack"), {
     ...commonProps,
   });
 
-  new IndexerStack(app, i("indexer-stack"), {
+  new stacks.IndexerStack(app, i("indexer-stack"), {
     ...commonProps,
   });
 }
