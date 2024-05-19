@@ -12,7 +12,7 @@ done
 write_settings() {
     echo "Writing settings to settings.env..."
     cat <<EOL > ./settings.env
-BUCKET_NAME="$BUCKET_NAME"
+MAIN_BUCKET_NAME="$MAIN_BUCKET_NAME"
 CHUNK_PATH_PREFIX="chunk"
 LOCAL_ENDPOINT="http://localhost:4566/"
 RAW_EVENTS_SQS_ARN="$RAW_EVENTS_SQS_ARN"
@@ -106,19 +106,19 @@ URL_SQS_ARN=$(get_or_create_queue_arn "url-to-crawl")
 RAW_EVENTS_SQS_ARN=$(get_or_create_queue_arn "raw-events-queue")
 
 # create s3 bucket if it doesn't already exist
-BUCKET_NAME="mn-revisor-chat-dev"
-if awslocal s3api head-bucket --bucket $BUCKET_NAME 2>/dev/null; then
-    echo "Bucket $BUCKET_NAME already exists."
+MAIN_BUCKET_NAME="mn-revisor-chat-dev"
+if awslocal s3api head-bucket --bucket $MAIN_BUCKET_NAME 2>/dev/null; then
+    echo "Bucket $MAIN_BUCKET_NAME already exists."
 else
-    echo "Bucket $BUCKET_NAME does not exist. Creating bucket..."
-    awslocal s3 mb "s3://${BUCKET_NAME}/"
+    echo "Bucket $MAIN_BUCKET_NAME does not exist. Creating bucket..."
+    awslocal s3 mb "s3://${MAIN_BUCKET_NAME}/"
     echo "Bucket created."
 fi
 
 # echo the settings
 echo
 echo
-echo "BUCKET_NAME=\"$BUCKET_NAME\""
+echo "MAIN_BUCKET_NAME=\"$MAIN_BUCKET_NAME\""
 echo "CHUNK_PATH_PREFIX=\"chunk\""
 echo "LOCAL_ENDPOINT=\"http://localhost:4566/\""
 echo "RAW_EVENTS_SQS_ARN=\"$RAW_EVENTS_SQS_ARN\""

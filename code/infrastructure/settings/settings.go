@@ -26,7 +26,7 @@ type Settings struct {
 }
 
 const emptySettings = `
-BUCKET_NAME=
+MAIN_BUCKET_NAME=
 CHUNK_PATH_PREFIX=
 LOCAL_ENDPOINT=
 RAW_EVENTS_SQS_ARN=
