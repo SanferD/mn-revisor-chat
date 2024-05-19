@@ -7,7 +7,6 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { ConfiguredFunction } from "../constructs/configured-lambda";
 import { DualQueue } from "../constructs/dual-sqs";
 import { TempLogGroup } from "../constructs/temp-log-group";
 import * as constants from "../constants";
@@ -15,7 +14,6 @@ import * as helpers from "../helpers";
 
 const CRAWLER_STREAM_PREFIX = "crawler-";
 const CRAWLER_CMD = "crawler";
-const TRIGGER_CRAWLER_ID = "trigger_crawler";
 const CRAWLER_CLUSTER_ID = "crawler-cluster";
 const CRAWLER_TASK_DEFINITION_ID = "crawler-task-definition";
 const CRAWLER_DOCKER_IMG_ASSET_ID = "crawler-dkr-img-asset";
@@ -40,22 +38,6 @@ export class CrawlerStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: CrawlerStackProps) {
     super(scope, id, props);
     props = { ...props };
-
-    // setup SQS infrastructure
-
-    // setup Lambda to trigger crawler
-    const triggerCrawlerFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_ID, {
-      environment: helpers.getEnvironment(props),
-      securityGroup: props.securityGroup,
-      vpc: props.vpc,
-      vpcSubnets: props.privateIsolatedSubnets,
-    });
-
-    //// configure trigger-crawler permissions
-    props.urlDQ.src.grantPurge(triggerCrawlerFunction);
-    props.urlDQ.src.grantSendMessages(triggerCrawlerFunction);
-    props.table1.grantReadWriteData(triggerCrawlerFunction);
-    triggerCrawlerFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
     // setup ecs to run crawlers
 
