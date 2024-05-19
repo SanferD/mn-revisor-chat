@@ -59,11 +59,11 @@ func (s3Helper *S3Helper) GetStatute(ctx context.Context, key string) (core.Stat
 	}
 	contents, err := s3Helper.getObject(ctx, key)
 	if err != nil {
-		return core.Statute{}, fmt.Errorf("error on reading object from s3: %v", err)
+		return core.Statute{}, fmt.Errorf("error on reading object from s3 (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	var statute core.Statute
 	if err := json.Unmarshal([]byte(contents), &statute); err != nil {
-		return core.Statute{}, fmt.Errorf("error on unmarshalling json object: %v", err)
+		return core.Statute{}, fmt.Errorf("error on unmarshalling json object (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	return statute, nil
 }
@@ -72,7 +72,7 @@ func (s3Helper *S3Helper) DeleteStatute(ctx context.Context, statute core.Statut
 	fileName := s3Helper.statuteToFileName(statute)
 	key := s3Helper.getChunkObjectKey(fileName)
 	if err := s3Helper.deleteObject(ctx, key); err != nil {
-		return fmt.Errorf("error on deleting object: %v", err)
+		return fmt.Errorf("error on deleting object (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	return nil
 }
@@ -99,7 +99,7 @@ func (s3Helper *S3Helper) putFile(ctx context.Context, key string, body io.Reade
 	defer cancel()
 	putObjectInput := &s3.PutObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key), Body: body}
 	if _, err := s3Helper.client.PutObject(ctx, putObjectInput); err != nil {
-		return fmt.Errorf("error on PutObject: %v", err)
+		return fmt.Errorf("error on PutObject (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	return nil
 }
@@ -110,11 +110,11 @@ func (s3Helper *S3Helper) getObject(ctx context.Context, key string) (string, er
 	getObjectInput := &s3.GetObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key)}
 	getObjectOutput, err := s3Helper.client.GetObject(ctx, getObjectInput)
 	if err != nil {
-		return "", fmt.Errorf("error on get object from s3: %v", err)
+		return "", fmt.Errorf("error on get object from s3 (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	bytes, err := io.ReadAll(getObjectOutput.Body)
 	if err != nil {
-		return "", fmt.Errorf("error on reading contents of get object body: %v", err)
+		return "", fmt.Errorf("error on reading contents of get object body (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	return string(bytes), nil
 
@@ -125,7 +125,7 @@ func (s3Helper *S3Helper) deleteObject(ctx context.Context, key string) error {
 	defer cancel()
 	deleteObjectInput := &s3.DeleteObjectInput{Bucket: aws.String(s3Helper.bucketName), Key: aws.String(key)}
 	if _, err := s3Helper.client.DeleteObject(ctx, deleteObjectInput); err != nil {
-		return fmt.Errorf("error on deleting object from s3: %v", err)
+		return fmt.Errorf("error on deleting object from s3 (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
 	}
 	return nil
 
