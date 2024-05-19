@@ -134,7 +134,7 @@ export class CrawlerStack extends cdk.Stack {
     crawlerScalableTaskCount.scaleOnMetric(CRAWLER_SCALABLE_METRIC_ID, {
       metric: backlogPerTaskMetric, // x >= 0 (always positive)
       scalingSteps: [
-        { lower: 0, upper: 1, change: -1 }, // x == 0; then -1
+        { lower: 0, upper: 0.99, change: -1 }, // 0 <= x <= 0.99; then -1 (inclusive interval apparently...)
         { lower: 1, change: +1 }, // 1 <= x ; then +1
       ],
       adjustmentType: appscaling.AdjustmentType.CHANGE_IN_CAPACITY,
