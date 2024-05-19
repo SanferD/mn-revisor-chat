@@ -88,6 +88,13 @@ func (scraper *Scraper) extractURLsFromTableXPath(contents io.Reader, xpath stri
 
 		// confirm that the chapter is valid and isn't repealed, etc
 		titleNode := htmlquery.FindOne(rowNode, titleRelativeToRowXPath)
+		if titleNode == nil { // malformed row (probably a subheading)
+			classVal := htmlquery.SelectAttr(rowNode, "class")
+			if len(classVal) == 0 {
+				return nil, fmt.Errorf("unknown table row format")
+			}
+			continue
+		}
 		titleContents := strings.TrimSpace(htmlquery.InnerText(titleNode))
 		isTitleContentsAllCaps := strings.ToUpper(titleContents) == titleContents
 		if !isTitleContentsAllCaps { // not a valid statute (likely repealed?)
