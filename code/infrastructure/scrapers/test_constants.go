@@ -167,12 +167,12 @@ var sectionWithSubSectionsStatute = core.Statute{
 	Title:   "STATE FLOWER.",
 	Subdivisions: []core.Subdivision{
 		{
-			Number:  1,
+			Number:  "1",
 			Heading: "Lady slipper.",
 			Content: "The pink and white lady slipper, Cypripedium reginae, is the official flower of the state of Minnesota.",
 		},
 		{
-			Number:  2,
+			Number:  "2",
 			Heading: "Photograph.",
 			Content: "A photograph of the pink and white lady slipper, obtained and approved by the commissioner of natural resources, shall be preserved in the Office of the Secretary of State.",
 		},
@@ -185,12 +185,12 @@ var sectionWithRepealedSubSectionsStatute = core.Statute{
 	Title:   "BILL DRAFTING FOR DEPARTMENTS AND AGENCIES.",
 	Subdivisions: []core.Subdivision{
 		{
-			Number:  1,
+			Number:  "1",
 			Heading: "Deadlines.",
 			Content: "A department or agency intending to urge the legislature to adopt a bill shall deliver the drafting request for the bill to the revisor of statutes by November 1 before the regular session of the legislature at which adoption will be urged. A commissioner or agency head, however, may deliver a drafting request later by certifying to the revisor, with supporting facts, that the request is an emergency, relates to a matter that could not reasonably have been foreseen before November 1, or for which there is other reasonable justification for delay. The completed bill draft, in a form ready for introduction, must be delivered by the revisor to a senator or representative as directed by the department or agency. If the draft was requested after November 1, it must be accompanied by a copy of the commissioner's certification to the revisor.",
 		},
 		{
-			Number:  3,
+			Number:  "3",
 			Heading: "Restrictions on outside drafting.",
 			Content: "A department or agency may not contract with an attorney, consultant, or other person either to provide drafting services to the department or agency or to advise on drafting unless the revisor determines that special expertise is required for the drafting and the expertise is not available from the revisor or the revisor's staff. A department or agency may not request legislative staff, other than the revisor of statutes, to provide drafting services to the department or agency.",
 		},
@@ -203,7 +203,7 @@ var sectionWithNoSubSectionsStatute = core.Statute{
 	Title:   "FEDERAL FLOWAGE EASEMENTS OVER HIGHWAYS.",
 	Subdivisions: []core.Subdivision{
 		{
-			Number:  -1,
+			Number:  "",
 			Heading: "",
 			Content: "When requested by the commissioner of transportation the governor, in behalf of the state, may grant, bargain, sell, and convey to the United States of America any easement for flowage in and upon any easement or fee owned by the state of Minnesota for trunk highway right-of-way purposes when it is required by the United States to aid a public improvement.",
 		},

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 
 	"github.com/antchfx/htmlquery"
@@ -135,7 +134,7 @@ func (scraper *Scraper) ExtractStatute(contents io.Reader) (core.Statute, error)
 			return core.Statute{}, fmt.Errorf("error could not find subdivisionss")
 		}
 		var subdivision = core.Subdivision{
-			Number:  -1,
+			Number:  "",
 			Heading: "",
 			Content: htmlquery.InnerText(paraNode),
 		}
@@ -181,10 +180,7 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		if len(subdNumTitleParts) < 2 {
 			return nil, fmt.Errorf("did not correctly parse subdivision number")
 		}
-		subdivNum, err := strconv.Atoi(subdNumTitleParts[0])
-		if err != nil {
-			return nil, fmt.Errorf("could not determine subdivision number")
-		}
+		subdivNum := subdNumTitleParts[0]
 		heading := strings.TrimSpace(subdNumTitleParts[1])
 
 		contentNode := htmlquery.FindOne(subd, contentRelativeToSubdivPath)

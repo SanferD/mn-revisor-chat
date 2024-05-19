@@ -14,7 +14,7 @@ type QueueMessage struct {
 type MNRevisorPageKind int
 
 type Subdivision struct {
-	Number  int
+	Number  string
 	Heading string
 	Content string
 }
