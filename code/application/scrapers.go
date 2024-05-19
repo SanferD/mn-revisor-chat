@@ -37,9 +37,6 @@ func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawD
 
 		// put scraped urls in the url queue for crawling
 		for _, url := range urls {
-			if !strings.HasPrefix("https:", url) { // convert //www.xyz.com -> https://www.xyz.com
-				url = "https:" + url
-			}
 			logger.Info("sending url \"%s\"", url)
 			if err := urlQueue.SendURL(ctx, url); err != nil {
 				logger.Error("error putting url: %v", err)

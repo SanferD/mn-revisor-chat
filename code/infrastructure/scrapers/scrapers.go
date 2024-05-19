@@ -101,6 +101,13 @@ func (scraper *Scraper) extractURLsFromTableXPath(contents io.Reader, xpath stri
 		if len(url) == 0 {
 			return nil, fmt.Errorf("could not find 'href' attribute, %v", htmlquery.InnerText(rowNode))
 		} else {
+
+			// format url appropriately
+			if strings.HasPrefix(url, "//www.revisor.mn.gov") {
+				url = "https:" + url
+			} else if strings.HasPrefix(url, "/statutes") {
+				url = "https://www.revisor.mn.gov" + url
+			}
 			urls = append(urls, url)
 		}
 	}
