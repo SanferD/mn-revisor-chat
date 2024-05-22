@@ -3,7 +3,7 @@ package scrapers
 const (
 	sectionDivXPath                      = "//div[@class='section']"
 	sectionsListH2XPath                  = "//h2[@class='chapter_title']"
-	tableOfChaptersH2XPath               = "//h2/../table/../h2"
+	tableOfChaptersH2XPath               = "//h2/../table/../h2[not(@class='subd_no')]"
 	tableXPath                           = "//table[@id='toc_table']/tbody/tr"
 	shortTableXPath                      = "//table[@id='chapters_table']/tbody/tr"
 	sectionsTableXPath                   = "//div[@id='chapter_analysis']/table/tbody/tr"

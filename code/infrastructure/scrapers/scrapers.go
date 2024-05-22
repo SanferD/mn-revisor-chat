@@ -16,7 +16,7 @@ const (
 	subTableOfChaptersHeadingPrefix = "Table of Chapters, "
 	subdivisionPrefix               = "Subdivision "
 	subdPrefix                      = "Subd. "
-	repealedPrefix                  = "[Repealed,"
+	repealedSubstring               = "[Repealed,"
 )
 
 type Scraper struct{}
@@ -197,7 +197,7 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		content := htmlquery.InnerText(contentNode)
 
 		if len(heading) == 0 {
-			if !strings.HasPrefix(content, repealedPrefix) {
+			if !strings.Contains(content, repealedSubstring) {
 				return nil, fmt.Errorf("could not verify subdivision was repealed")
 			}
 			continue
