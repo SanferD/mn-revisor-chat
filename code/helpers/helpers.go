@@ -6,7 +6,8 @@ import (
 )
 
 func IsLocalhostURL(url string) bool {
-	return strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "http://localhost")
+	return strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "http://localhost") || strings.HasPrefix(url, "https://localhost")
+
 }
 
 func Base64Encode(content string) string {
