@@ -86,7 +86,7 @@ func TestS3Helper(t *testing.T) {
 
 	t.Run("test PutChunk", func(t *testing.T) {
 
-		chunks := helpers.Statute2SubdivisionChunks(testStatute)
+		chunks := helpers.Statute2SubdivisionChunks(core.TestStatute1)
 		for _, chunk := range chunks {
 			err := s3Helper.PutChunk(ctx, chunk)
 			assert.NoError(t, err, "error on put chunk: %v", err)
