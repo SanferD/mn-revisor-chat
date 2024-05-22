@@ -8,6 +8,7 @@ import (
 	"code/infrastructure/scrapers"
 	"code/infrastructure/settings"
 	"code/infrastructure/stores"
+	"code/infrastructure/types"
 	"context"
 	"encoding/json"
 	"log"
@@ -24,18 +25,6 @@ var (
 	chunksStore    core.ChunksDataStore
 	scraper        core.MNRevisorStatutesScraper
 )
-
-type s3EventMessage struct {
-	Detail s3Detail `json:"detail"`
-}
-
-type s3Detail struct {
-	Object s3Object `json:"object"`
-}
-
-type s3Object struct {
-	Key string `json:"key"`
-}
 
 func init() {
 	ctx := context.Background()
@@ -78,7 +67,7 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 	var err error
 	for _, record := range sqsEvent.Records {
 		logger.Info("processing", record)
-		var event s3EventMessage
+		var event types.S3EventMessage
 		json.Unmarshal([]byte(record.Body), &event)
 		err = application.ScrapeRawPage(ctx, event.Detail.Object.Key, rawStore, chunksStore, urlQueue, scraper, logger)
 		if err != nil {
