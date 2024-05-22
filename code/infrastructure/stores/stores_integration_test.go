@@ -2,6 +2,7 @@ package stores
 
 import (
 	"code/core"
+	"code/helpers"
 	"code/infrastructure/settings"
 	"context"
 	"strings"
@@ -13,8 +14,8 @@ import (
 var testStatute = core.Statute{
 	Chapter: "1a", Section: "34", Title: "not a real statute",
 	Subdivisions: []core.Subdivision{
-		{Number: 1, Heading: "hello", Content: "some sample text"},
-		{Number: 2, Heading: "world", Content: "more sample text"},
+		{Number: "1", Heading: "hello", Content: "some sample text"},
+		{Number: "2", Heading: "world", Content: "more sample text"},
 	},
 }
 
@@ -91,26 +92,23 @@ func TestS3Helper(t *testing.T) {
 		assert.Error(t, err, "get text file was supposed to receive an error after deletion, fileName=%s", fileName)
 	})
 
-	t.Run("test PutStatute, GetStatute, DeleteStatute", func(t *testing.T) {
+	t.Run("test PutChunk", func(t *testing.T) {
 
-		// put returns no error
-		err := s3Helper.PutStatute(ctx, testStatute)
-		assert.NoError(t, err, "error on put statute: %v", err)
+		chunks := helpers.Statute2SubdivisionChunks(testStatute)
+		for _, chunk := range chunks {
+			err := s3Helper.PutChunk(ctx, chunk)
+			assert.NoError(t, err, "error on put chunk: %v", err)
+		}
 
-		// get retrieves the statute
-		fileName := testStatute.Chapter + "." + testStatute.Section + " " + testStatute.Title
-		key := s3Helper.getChunkObjectKey(fileName)
-		statute, err := s3Helper.GetStatute(ctx, key)
-		assert.NoError(t, err, "error on get statute: %v", err)
-		assert.Equal(t, testStatute, statute, "error statutes are not equal but should be")
+		for _, chunk := range chunks {
+			chunkKey := s3Helper.getChunkObjectKey(chunk)
+			foundChunk, err := s3Helper.getObject(ctx, chunkKey)
+			assert.NoError(t, err, "error on get object: %v", err)
+			assert.Equal(t, chunk.Body, foundChunk, "chunk that was put is not equal to chunk that was read")
 
-		// delete returns no error
-		err = s3Helper.DeleteStatute(ctx, statute)
-		assert.NoError(t, err, "delete returned an error")
+			s3Helper.deleteObject(ctx, chunkKey)
+		}
 
-		// get after delete returns error
-		_, err = s3Helper.GetStatute(ctx, key)
-		assert.Error(t, err, "did not get an error after deleting statute")
 	})
 
 }

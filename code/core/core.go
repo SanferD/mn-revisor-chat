@@ -13,6 +13,11 @@ type QueueMessage struct {
 
 type MNRevisorPageKind int
 
+type Chunk struct {
+	ID   string
+	Body string
+}
+
 type Subdivision struct {
 	Number  string
 	Heading string
@@ -76,10 +81,8 @@ type RawDataStore interface {
 	DeleteTextFile(context.Context, string) error
 }
 
-type StatutesDataStore interface {
-	GetStatute(context.Context, string) (Statute, error)
-	PutStatute(context.Context, Statute) error
-	DeleteStatute(context.Context, Statute) error
+type ChunksDataStore interface {
+	PutChunk(context.Context, Chunk) error
 }
 
 type WebClient interface {

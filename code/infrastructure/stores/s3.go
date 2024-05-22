@@ -1,11 +1,9 @@
 package stores
 
 import (
-	"bytes"
 	"code/core"
 	"code/helpers"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -42,39 +40,10 @@ func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix, chunkPat
 	return &S3Helper{client: client, bucketName: bucketName, rawPathPrefix: rawPathPrefix, chunkPathPrefix: chunkPathPrefix, timeout: timeout}, nil
 }
 
-func (s3Helper *S3Helper) PutStatute(ctx context.Context, statute core.Statute) error {
-	fileName := s3Helper.statuteToFileName(statute)
-	statuteJsonBytes, err := json.Marshal(statute)
-	if err != nil {
-		return fmt.Errorf("error when converting statute to json: %v", err)
-	}
-	body := bytes.NewReader(statuteJsonBytes)
-	key := s3Helper.getChunkObjectKey(fileName)
+func (s3Helper *S3Helper) PutChunk(ctx context.Context, chunk core.Chunk) error {
+	key := s3Helper.getChunkObjectKey(chunk)
+	body := strings.NewReader(chunk.Body)
 	return s3Helper.putFile(ctx, key, body)
-}
-
-func (s3Helper *S3Helper) GetStatute(ctx context.Context, key string) (core.Statute, error) {
-	if err := s3Helper.validatePrefix(key, s3Helper.chunkPathPrefix); err != nil {
-		return core.Statute{}, err
-	}
-	contents, err := s3Helper.getObject(ctx, key)
-	if err != nil {
-		return core.Statute{}, fmt.Errorf("error on reading object from s3 (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
-	}
-	var statute core.Statute
-	if err := json.Unmarshal([]byte(contents), &statute); err != nil {
-		return core.Statute{}, fmt.Errorf("error on unmarshalling json object (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
-	}
-	return statute, nil
-}
-
-func (s3Helper *S3Helper) DeleteStatute(ctx context.Context, statute core.Statute) error {
-	fileName := s3Helper.statuteToFileName(statute)
-	key := s3Helper.getChunkObjectKey(fileName)
-	if err := s3Helper.deleteObject(ctx, key); err != nil {
-		return fmt.Errorf("error on deleting object (bucketName=%s, key=%s): %v", s3Helper.bucketName, key, err)
-	}
-	return nil
 }
 
 func (s3Helper *S3Helper) PutTextFile(ctx context.Context, fileName string, body io.Reader) error {
@@ -131,16 +100,12 @@ func (s3Helper *S3Helper) deleteObject(ctx context.Context, key string) error {
 
 }
 
-func (s3Helper *S3Helper) statuteToFileName(statute core.Statute) string {
-	return statute.Chapter + "." + statute.Section + " " + statute.Title
-}
-
 func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
 	return s3Helper.rawPathPrefix + "/" + fileName
 }
 
-func (s3Helper *S3Helper) getChunkObjectKey(fileName string) string {
-	return s3Helper.chunkPathPrefix + "/" + fileName
+func (s3Helper *S3Helper) getChunkObjectKey(chunk core.Chunk) string {
+	return s3Helper.chunkPathPrefix + "/" + chunk.ID
 }
 
 func (s3Helper *S3Helper) validatePrefix(key, prefix string) error {

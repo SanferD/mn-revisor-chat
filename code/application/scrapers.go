@@ -2,12 +2,13 @@ package application
 
 import (
 	"code/core"
+	"code/helpers"
 	"context"
 	"fmt"
 	"strings"
 )
 
-func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawDataStore, statutesDataStore core.StatutesDataStore, urlQueue core.URLQueue, scraper core.MNRevisorStatutesScraper, logger core.Logger) error {
+func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawDataStore, chunksDataStore core.ChunksDataStore, urlQueue core.URLQueue, scraper core.MNRevisorStatutesScraper, logger core.Logger) error {
 
 	// get text file
 	logger.Info("getting text file \"%s\"", objectKey)
@@ -52,9 +53,11 @@ func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawD
 			return fmt.Errorf("error on extracting statutes: %v", err)
 		}
 
-		// put statute in store
-		if err := statutesDataStore.PutStatute(ctx, statute); err != nil {
-			return fmt.Errorf("error on putting statute into statute store: %v", err)
+		// put subdivision chunks into data store
+		for _, chunk := range helpers.Statute2SubdivisionChunks(statute) {
+			if err := chunksDataStore.PutChunk(ctx, chunk); err != nil {
+				return fmt.Errorf("error on putting chunk into chunk store: %v", err)
+			}
 		}
 	default:
 		return fmt.Errorf("unsupported page kind: %v", pageKind)

@@ -21,7 +21,7 @@ var (
 	rawEventsQueue core.RawEventsQueue
 	logger         core.Logger
 	rawStore       core.RawDataStore
-	statutesStore  core.StatutesDataStore
+	chunksStore    core.ChunksDataStore
 	scraper        core.MNRevisorStatutesScraper
 )
 
@@ -65,7 +65,7 @@ func init() {
 		logger.Fatal("error on initializing s3-helper: %v", err)
 	}
 	rawStore = s3Helper
-	statutesStore = s3Helper
+	chunksStore = s3Helper
 
 	scraper, err = scrapers.InitializeScraper()
 	if err != nil {
@@ -80,7 +80,7 @@ func HandleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 		logger.Info("processing", record)
 		var event s3EventMessage
 		json.Unmarshal([]byte(record.Body), &event)
-		err = application.ScrapeRawPage(ctx, event.Detail.Object.Key, rawStore, statutesStore, urlQueue, scraper, logger)
+		err = application.ScrapeRawPage(ctx, event.Detail.Object.Key, rawStore, chunksStore, urlQueue, scraper, logger)
 		if err != nil {
 			logger.Fatal("error on scraping raw page: %v", err)
 		}
