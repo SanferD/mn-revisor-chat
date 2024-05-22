@@ -11,14 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testStatute = core.Statute{
-	Chapter: "1a", Section: "34", Title: "not a real statute",
-	Subdivisions: []core.Subdivision{
-		{Number: "1", Heading: "hello", Content: "some sample text"},
-		{Number: "2", Heading: "world", Content: "more sample text"},
-	},
-}
-
 func TestTable1(t *testing.T) {
 	mySettings, err := settings.GetSettings()
 	assert.NoError(t, err, "error on GetSettings: %v", err)
