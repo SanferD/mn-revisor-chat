@@ -11,7 +11,7 @@ import (
 )
 
 const relativeSettingsFilePath = "../../../settings.env"
-const defaultContextTimeout = 31 * time.Second
+const defaultContextTimeout = 59 * time.Second
 
 type Settings struct {
 	MainBucketName  string        `mapstructure:"MAIN_BUCKET_NAME"`
