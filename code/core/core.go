@@ -58,7 +58,6 @@ type URLQueue interface {
 }
 
 type RawEventsQueue interface {
-	DeleteEvent(context.Context, string) error
 	Queue
 }
 
@@ -67,6 +66,7 @@ type Queue interface {
 	SendMessage(context.Context, QueueMessage) error
 	ReceiveMessage(context.Context) (QueueMessage, error)
 	DeleteMessage(context.Context, QueueMessage) error
+	DeleteMessageByHandle(context.Context, string) error
 }
 
 type SeenURLStore interface {

@@ -85,7 +85,7 @@ func (sqsHelper *SQSHelper) SendURL(ctx context.Context, url string) error {
 	return sqsHelper.SendMessage(ctx, core.QueueMessage{Body: url})
 }
 
-func (sqsHelper *SQSHelper) DeleteEvent(ctx context.Context, handle string) error {
+func (sqsHelper *SQSHelper) DeleteMessageByHandle(ctx context.Context, handle string) error {
 	return sqsHelper.DeleteMessage(ctx, core.QueueMessage{Handle: handle})
 }
 

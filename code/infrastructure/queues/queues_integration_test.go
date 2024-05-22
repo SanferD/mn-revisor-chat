@@ -57,7 +57,7 @@ func TestQueues(t *testing.T) {
 			err = sqsHelper.SendURL(ctx, url1)
 			assert.NoError(err, "error on send url: %v", err)
 			msg, _ = sqsHelper.ReceiveMessage(ctx)
-			err = sqsHelper.DeleteEvent(ctx, msg.Handle)
+			err = sqsHelper.DeleteMessageByHandle(ctx, msg.Handle)
 			assert.NoError(err, "error on delete event: %v", err)
 		})
 
