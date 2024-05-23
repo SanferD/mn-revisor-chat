@@ -1,19 +1,25 @@
 import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import { Construct } from "constructs";
+import { bedrock } from "@cdklabs/generative-ai-cdk-constructs";
+import { opensearchserverless, opensearch_vectorindex } from "@cdklabs/generative-ai-cdk-constructs";
 import { DualQueue } from "../constructs/dual-sqs";
 import { S3Rule } from "../constructs/s3-rule";
 import * as constants from "../constants";
 
+const DATA_SOURCE_NAME = "mn-revisor-statute-subdivisions";
+const KNOWLEDGE_BASE_ID = "knowledge-base";
 const MAIN_BUCKET_ID = "main-bucket";
+const PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID = "put-raw-events-to-raw-events-dq-rule";
+const RAW_EVENTS_DQ_ID = "raw-events-dq";
+const SUBDIVISIONS_DATA_SOURCE_ID = "subdivisions-data-source";
 const TABLE1_ID = "table-1";
 const URL_DQ_ID = "url-dq";
-const RAW_EVENTS_DQ_ID = "raw-events-dq";
-const TO_INDEX_DQ_ID = "to-index-dq";
-const PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID = "put-raw-events-to-raw-events-dq-rule";
-const PUT_CHUNK_EVENTS_TO_TO_INDEX_DQ_RULE_ID = "put-chunk-events-to-to-index-dq-rule";
+const VECTOR_COLLECTION_ID = "vector-collection";
+const VECTOR_INDEX_ID = "vector-index";
 
 export interface StatefulStackProps extends cdk.StackProps {}
 
@@ -22,6 +28,7 @@ export class StatefulStack extends cdk.Stack {
   readonly table1: dynamodb.TableV2;
   readonly urlDQ: DualQueue;
   readonly rawEventsDQ: DualQueue;
+  readonly knowledgeBase: bedrock.KnowledgeBase;
 
   constructor(scope: Construct, id: string, props: StatefulStackProps) {
     super(scope, id, props);
@@ -46,6 +53,46 @@ export class StatefulStack extends cdk.Stack {
       timeToLiveAttribute: constants.TTL_ATTRIBUTE, // application sets TTL to reduce storage costs
     });
 
+    /* opensearch */
+    const vectorCollection = new opensearchserverless.VectorCollection(this, VECTOR_COLLECTION_ID);
+
+    const vectorIndex = new opensearch_vectorindex.VectorIndex(this, VECTOR_INDEX_ID, {
+      collection: vectorCollection,
+      indexName: constants.SUBDIVISIONS_STATUTES_INDEX_NAME,
+      vectorField: constants.SUBDIVISIONS_VECTOR,
+      vectorDimensions: 1536,
+      mappings: [
+        {
+          mappingField: "AMAZON_BEDROCK_TEXT_CHUNK",
+          dataType: "text",
+          filterable: true,
+        },
+        {
+          mappingField: "AMAZON_BEDROCK_METADATA",
+          dataType: "text",
+          filterable: false,
+        },
+      ],
+    });
+
+    this.knowledgeBase = new bedrock.KnowledgeBase(this, KNOWLEDGE_BASE_ID, {
+      embeddingsModel: bedrock.BedrockFoundationModel.TITAN_EMBED_TEXT_V1,
+      indexName: vectorIndex.indexName,
+      vectorStore: vectorCollection,
+      vectorField: vectorIndex.vectorField,
+      vectorIndex,
+    });
+
+    new bedrock.S3DataSource(this, SUBDIVISIONS_DATA_SOURCE_ID, {
+      dataSourceName: DATA_SOURCE_NAME,
+      bucket: this.mainBucket,
+      inclusionPrefixes: [constants.CHUNK_OBJECT_PREFIX],
+      chunkingStrategy: bedrock.ChunkingStrategy.NONE,
+      knowledgeBase: this.knowledgeBase,
+      overlapPercentage: 0,
+    });
+
+    /* queues for data transformation along with triggers */
     this.urlDQ = new DualQueue(this, URL_DQ_ID, {});
     this.rawEventsDQ = new DualQueue(this, RAW_EVENTS_DQ_ID, {});
 

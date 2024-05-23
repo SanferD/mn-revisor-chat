@@ -8,13 +8,9 @@ function main(app: cdk.App, config: conf.Config) {
 
   const i = (x: string) => `${x}-${config.nonce}`;
 
-  const statefulStack = new stacks.StatefulStack(app, i("stateful-stack"), {});
   const vpcStack = new stacks.VpcStack(app, i("vpc-stack"), { azCount: config.azCount });
 
-  const commonProps = {
-    securityGroup: vpcStack.securityGroup,
-    vpc: vpcStack.vpc,
-  });
+  const statefulStack = new stacks.StatefulStack(app, i("stateful-stack"), {});
 
   const commonProps = {
     mainBucket: statefulStack.mainBucket,
