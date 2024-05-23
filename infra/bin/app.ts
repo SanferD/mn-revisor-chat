@@ -14,27 +14,28 @@ function main(app: cdk.App, config: conf.Config) {
   const commonProps = {
     securityGroup: vpcStack.securityGroup,
     vpc: vpcStack.vpc,
+  });
+
+  const commonProps = {
+    mainBucket: statefulStack.mainBucket,
     privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
     privateWithEgressSubnets: vpcStack.privateWithEgressSubnets,
-    mainBucket: statefulStack.mainBucket,
+    rawEventsDQ: statefulStack.rawEventsDQ,
+    securityGroup: vpcStack.securityGroup,
     table1: statefulStack.table1,
     urlDQ: statefulStack.urlDQ,
-    rawEventsDQ: statefulStack.rawEventsDQ,
-    toIndexDQ: statefulStack.toIndexDQ,
+    vpc: vpcStack.vpc,
   };
 
   new stacks.TriggerCrawlerStack(app, i("trigger-crawler-stack"), {
     ...commonProps,
   });
+
   new stacks.CrawlerStack(app, i("crawler-stack"), {
     ...commonProps,
   });
 
   new stacks.ScraperStack(app, i("scraper-stack"), {
-    ...commonProps,
-  });
-
-  new stacks.IndexerStack(app, i("indexer-stack"), {
     ...commonProps,
   });
 }

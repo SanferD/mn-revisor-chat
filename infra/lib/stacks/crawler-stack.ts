@@ -31,7 +31,6 @@ export interface CrawlerStackProps extends cdk.StackProps {
   table1: dynamodb.TableV2;
   urlDQ: DualQueue;
   rawEventsDQ: DualQueue;
-  toIndexDQ: DualQueue;
 }
 
 export class CrawlerStack extends cdk.Stack {

@@ -22,7 +22,7 @@ export class StatefulStack extends cdk.Stack {
   readonly table1: dynamodb.TableV2;
   readonly urlDQ: DualQueue;
   readonly rawEventsDQ: DualQueue;
-  readonly toIndexDQ: DualQueue;
+
   constructor(scope: Construct, id: string, props: StatefulStackProps) {
     super(scope, id, props);
 
@@ -48,20 +48,12 @@ export class StatefulStack extends cdk.Stack {
 
     this.urlDQ = new DualQueue(this, URL_DQ_ID, {});
     this.rawEventsDQ = new DualQueue(this, RAW_EVENTS_DQ_ID, {});
-    this.toIndexDQ = new DualQueue(this, TO_INDEX_DQ_ID, {});
 
     // send PutObject events over s3://main-bucket/raw/* to the raw-events queue
     new S3Rule(this, PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID, {
       bucket: this.mainBucket,
       prefix: constants.RAW_OBJECT_PREFIX_PATH,
       targets: [new targets.SqsQueue(this.rawEventsDQ.src)],
-    });
-
-    // send PutObject events over s3://main-bucket/chunk/* to to-index queue
-    new S3Rule(this, PUT_CHUNK_EVENTS_TO_TO_INDEX_DQ_RULE_ID, {
-      bucket: this.mainBucket,
-      prefix: constants.CHUNK_OBJECT_PREFIX_PATH,
-      targets: [new targets.SqsQueue(this.toIndexDQ.src)],
     });
   }
 }
