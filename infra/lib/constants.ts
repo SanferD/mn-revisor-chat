@@ -14,3 +14,6 @@ export const MAIN_BUCKET_NAME_ENV_NAME = "MAIN_BUCKET_NAME";
 export const TABLE_1_ARN_ENV_NAME = "TABLE_1_ARN";
 export const URL_SQS_ARN_ENV_NAME = "URL_SQS_ARN";
 export const RAW_EVENTS_SQS_ARN_ENV_NAME = "RAW_EVENTS_SQS_ARN";
+
+export const SUBDIVISIONS_STATUTES_INDEX_NAME = "subdivisions-vector-index";
+export const SUBDIVISIONS_VECTOR = "subdivision-vector";
