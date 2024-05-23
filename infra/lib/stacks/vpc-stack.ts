@@ -7,6 +7,8 @@ const SECURITY_GROUP_ID = "security-group";
 const VPC_GATEWAY_ENDPOINT_DYNAMODB_ID = "vpc-gateway-endpoint-dynamodb";
 const VPC_INTERFACE_ENDPOINT_SQS_ID = "vpc-interface-endpoint-sqs";
 const VPC_GATEWAY_ENDPOINT_S3_ID = "vpc-gateway-endpoint-s3";
+const VPC_INTERFACE_ENDPOINT_BEDROCK_ID = "vpc-interface-endpoint-bedrock";
+const VPC_INTERFACE_ENDPOINT_BEDROCK_RUNTIME_ID = "vpc-interface-endpoint-bedrock-runtime";
 
 export interface VpcStackProps extends cdk.StackProps {
   azCount: number;
@@ -77,6 +79,18 @@ export class VpcStack extends cdk.Stack {
     this.vpc.addGatewayEndpoint(VPC_GATEWAY_ENDPOINT_S3_ID, {
       service: ec2.GatewayVpcEndpointAwsService.S3,
       subnets: [this.privateIsolatedSubnets],
+    });
+
+    //// vpc endpoint to Bedrock
+    this.vpc.addInterfaceEndpoint(VPC_INTERFACE_ENDPOINT_BEDROCK_ID, {
+      service: ec2.InterfaceVpcEndpointAwsService.BEDROCK,
+      privateDnsEnabled: true,
+      subnets: this.privateIsolatedSubnets,
+    });
+    this.vpc.addInterfaceEndpoint(VPC_INTERFACE_ENDPOINT_BEDROCK_RUNTIME_ID, {
+      service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME,
+      privateDnsEnabled: true,
+      subnets: this.privateIsolatedSubnets,
     });
   }
 }
