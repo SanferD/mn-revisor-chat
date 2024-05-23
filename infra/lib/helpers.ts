@@ -4,7 +4,6 @@ import * as constants from "./constants";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
 import { execSync } from "child_process";
-import { DynamoDbDataSource } from "aws-cdk-lib/aws-appsync";
 import { DualQueue } from "./constructs/dual-sqs";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
@@ -91,7 +90,6 @@ export interface getEnvironmentProps {
   table1?: dynamodb.TableV2;
   urlDQ?: DualQueue;
   rawEventsDQ?: DualQueue;
-  toIndexDQ?: DualQueue;
 }
 
 export function getEnvironment(props: getEnvironmentProps): { [key: string]: string } {
@@ -109,9 +107,6 @@ export function getEnvironment(props: getEnvironmentProps): { [key: string]: str
   }
   if (props.rawEventsDQ !== null && props.rawEventsDQ !== undefined) {
     environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsDQ.src.queueArn;
-  }
-  if (props.toIndexDQ !== null && props.toIndexDQ !== undefined) {
-    environment[constants.TO_INDEX_SQS_ARN_ENV_NAME] = props.toIndexDQ.src.queueArn;
   }
   return environment;
 }
