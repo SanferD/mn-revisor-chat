@@ -18,6 +18,8 @@ const (
 	sectionNoSubSections           = "section_no_subsections.html"
 	sectionWithSubSections         = "section_with_subsections.html"
 	sectionWithRepealedSubSections = "section_with_repealed_subsections.html"
+	sectionWithTables              = "section_with_tables.html"
+	sectionEmpty                   = "section_empty.html"
 )
 
 type pageKindTest struct {
@@ -32,6 +34,7 @@ var pageKindTests []pageKindTest = []pageKindTest{
 	{testKind: core.Statutes, fileName: sectionNoSubSections},
 	{testKind: core.Statutes, fileName: sectionWithSubSections},
 	{testKind: core.Statutes, fileName: sectionWithRepealedSubSections},
+	{testKind: core.Statutes, fileName: sectionWithTables},
 }
 
 type extractURLsTest struct {
@@ -54,6 +57,8 @@ var extractStatuteTests = []extractStatuteTest{
 	{fileName: sectionWithSubSections, statute: sectionWithSubSectionsStatute},
 	{fileName: sectionWithRepealedSubSections, statute: sectionWithRepealedSubSectionsStatute},
 	{fileName: sectionNoSubSections, statute: sectionWithNoSubSectionsStatute},
+	{fileName: sectionWithTables, statute: sectionWithTablesStatute},
+	{fileName: sectionEmpty, statute: emptyStatute},
 }
 
 func TestScrapers(t *testing.T) {
@@ -90,7 +95,7 @@ func TestScrapers(t *testing.T) {
 			contents, err := readContents(test.fileName)
 			assert.NoError(t, err, "error on reading text file contents: %v", err)
 			statute, err := scraper.ExtractStatute(contents)
-			if assert.NoError(t, err, "error on extracting statute: %v") {
+			if assert.NoError(t, err, "error on extracting statute: %v", err) {
 				assert.Equal(t, test.statute, statute, "statutes are not equal")
 			}
 		}

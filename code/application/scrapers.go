@@ -52,9 +52,14 @@ func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawD
 		if err != nil {
 			return fmt.Errorf("error on extracting statutes: %v", err)
 		}
+		if len(statute.Title) == 0 {
+			logger.Info("statute is empty, skipping...")
+			return nil
+		}
 
 		// put subdivision chunks into data store
 		for _, chunk := range helpers.Statute2SubdivisionChunks(statute) {
+			logger.Info("putting chunk in data store, chunk=%s", chunk)
 			if err := chunksDataStore.PutChunk(ctx, chunk); err != nil {
 				return fmt.Errorf("error on putting chunk into chunk store: %v", err)
 			}

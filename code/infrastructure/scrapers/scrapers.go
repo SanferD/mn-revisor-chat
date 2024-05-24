@@ -16,7 +16,9 @@ const (
 	subTableOfChaptersHeadingPrefix = "Table of Chapters, "
 	subdivisionPrefix               = "Subdivision "
 	subdPrefix                      = "Subd. "
+	subdTypoPrefix                  = "Subd "
 	repealedSubstring               = "[Repealed,"
+	renumberedSubstring             = "[Renumbered"
 )
 
 type Scraper struct{}
@@ -131,6 +133,14 @@ func (scraper *Scraper) ExtractStatute(contents io.Reader) (core.Statute, error)
 	}
 	title := htmlquery.FindOne(sectionNode, titleRelativeToSectionXPath)
 	if title == nil {
+		// test if it's an empty statute
+		pNode := htmlquery.FindOne(sectionNode, paraNodeRelativeToSectionXPath)
+		if pNode != nil {
+			paraContent := htmlquery.InnerText(pNode)
+			if strings.Contains(paraContent, repealedSubstring) {
+				return core.Statute{}, nil
+			}
+		}
 		return core.Statute{}, fmt.Errorf("error could not find statute title")
 	}
 	subdivisionDivs := htmlquery.Find(sectionNode, subdivDivRelativeToSectionXPath)
@@ -179,6 +189,8 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 			subdNumTitle = subdNoText[len(subdivisionPrefix):]
 		} else if strings.HasPrefix(subdNoText, subdPrefix) {
 			subdNumTitle = subdNoText[len(subdPrefix):]
+		} else if strings.HasPrefix(subdNoText, subdTypoPrefix) {
+			subdNumTitle = subdNoText[len(subdTypoPrefix):]
 		} else {
 			return nil, fmt.Errorf("could not determine the subdivision format")
 		}
@@ -190,14 +202,24 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		subdivNum := subdNumTitleParts[0]
 		heading := strings.TrimSpace(subdNumTitleParts[1])
 
-		contentNode := htmlquery.FindOne(subd, contentRelativeToSubdivPath)
+		contentNode := htmlquery.FindOne(subd, contentRelativeToSubdivXPath)
+		var content string
 		if contentNode == nil {
-			return nil, fmt.Errorf("could not determine subdivision body")
+			tableNode := htmlquery.FindOne(subd, tableRelativeToSubdivisionXPath)
+			if tableNode == nil {
+				return nil, fmt.Errorf("could not determine subdivision body")
+			}
+			var err error
+			content, err = table2csv(tableNode)
+			if err != nil {
+				return nil, fmt.Errorf("error on converting table2csv: %v", err)
+			}
+		} else {
+			content = htmlquery.InnerText(contentNode)
 		}
-		content := htmlquery.InnerText(contentNode)
 
 		if len(heading) == 0 {
-			if !strings.Contains(content, repealedSubstring) {
+			if !strings.Contains(content, repealedSubstring) && !strings.Contains(content, renumberedSubstring) {
 				return nil, fmt.Errorf("could not verify subdivision was repealed")
 			}
 			continue
@@ -211,4 +233,31 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		subdivisions = append(subdivisions, subdivision)
 	}
 	return subdivisions, nil
+}
+
+func table2csv(tableNode *html.Node) (string, error) {
+	var builder strings.Builder
+	tableBody := htmlquery.FindOne(tableNode, tableBodyRelativeToTableXPath)
+	if tableBody == nil {
+		return "", fmt.Errorf("could not find table body")
+	}
+	rows := htmlquery.Find(tableBody, tableRowRelativeToTableBodyXPath)
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		cells := htmlquery.Find(row, tableCellRelativeToTableRowXPath)
+		for i, cell := range cells {
+			value := htmlquery.InnerText(cell)
+			if i != 0 {
+				builder.WriteString(",")
+			}
+			builder.WriteString(strings.TrimSpace(value))
+		}
+		builder.WriteString("\n")
+	}
+	if builder.Len() == 0 {
+		return "", fmt.Errorf("failed to get table rows")
+	}
+	return builder.String(), nil
 }
