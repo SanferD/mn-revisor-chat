@@ -5,10 +5,15 @@ import { Construct } from "constructs";
 const VPC_ID = "vpc";
 const SECURITY_GROUP_ID = "security-group";
 const VPC_GATEWAY_ENDPOINT_DYNAMODB_ID = "vpc-gateway-endpoint-dynamodb";
-const VPC_INTERFACE_ENDPOINT_SQS_ID = "vpc-interface-endpoint-sqs";
+const VPCE_SQS_ID = "vpc-interface-endpoint-sqs";
 const VPC_GATEWAY_ENDPOINT_S3_ID = "vpc-gateway-endpoint-s3";
-const VPC_INTERFACE_ENDPOINT_BEDROCK_ID = "vpc-interface-endpoint-bedrock";
-const VPC_INTERFACE_ENDPOINT_BEDROCK_RUNTIME_ID = "vpc-interface-endpoint-bedrock-runtime";
+const VPCE_BEDROCK_ID = "vpc-interface-endpoint-bedrock";
+const VPCE_RUNTIME_ID = "vpc-interface-endpoint-bedrock-runtime";
+const VPCE_ECS_ID = "vpc-interace-endpoint-ecs";
+const VPCE_ECR_ID = "vpc-interface-endpoint-ecr";
+const VPCE_ECR_DKR_ID = "vpc-interface-endpiont-ecr-dkr";
+const VPCE_CLOUDWATCH_LOGS_ID = "vpc-interface-endpoint-cloudwatch-logs";
+const VPCE_CLOUDWATCH_MONITORING_ID = "vpc-interface-endpoint-cloudwatch-monitoring";
 
 export interface VpcStackProps extends cdk.StackProps {
   azCount: number;
@@ -68,29 +73,29 @@ export class VpcStack extends cdk.Stack {
       subnets: [this.privateIsolatedSubnets],
     });
 
-    //// vpc endpoint to SQS
-    this.vpc.addInterfaceEndpoint(VPC_INTERFACE_ENDPOINT_SQS_ID, {
-      service: ec2.InterfaceVpcEndpointAwsService.SQS,
-      privateDnsEnabled: true,
-      subnets: this.privateIsolatedSubnets,
-    });
-
     //// vpc endpoint to S3
     this.vpc.addGatewayEndpoint(VPC_GATEWAY_ENDPOINT_S3_ID, {
       service: ec2.GatewayVpcEndpointAwsService.S3,
       subnets: [this.privateIsolatedSubnets],
     });
 
-    //// vpc endpoint to Bedrock
-    this.vpc.addInterfaceEndpoint(VPC_INTERFACE_ENDPOINT_BEDROCK_ID, {
-      service: ec2.InterfaceVpcEndpointAwsService.BEDROCK,
-      privateDnsEnabled: true,
-      subnets: this.privateIsolatedSubnets,
-    });
-    this.vpc.addInterfaceEndpoint(VPC_INTERFACE_ENDPOINT_BEDROCK_RUNTIME_ID, {
-      service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME,
-      privateDnsEnabled: true,
-      subnets: this.privateIsolatedSubnets,
-    });
+    //// vpc endpoints
+    const id2service: { [key: string]: ec2.InterfaceVpcEndpointAwsService } = {};
+    id2service[VPCE_SQS_ID] = ec2.InterfaceVpcEndpointAwsService.SQS;
+    id2service[VPCE_BEDROCK_ID] = ec2.InterfaceVpcEndpointAwsService.BEDROCK;
+    id2service[VPCE_RUNTIME_ID] = ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME;
+    id2service[VPCE_ECS_ID] = ec2.InterfaceVpcEndpointAwsService.ECS;
+    id2service[VPCE_ECR_ID] = ec2.InterfaceVpcEndpointAwsService.ECR;
+    id2service[VPCE_ECR_DKR_ID] = ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER;
+    id2service[VPCE_CLOUDWATCH_LOGS_ID] = ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS;
+    id2service[VPCE_CLOUDWATCH_MONITORING_ID] = ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_MONITORING;
+
+    for (const id in id2service) {
+      this.vpc.addInterfaceEndpoint(id, {
+        service: id2service[id],
+        privateDnsEnabled: true,
+        subnets: this.privateIsolatedSubnets,
+      });
+    }
   }
 }
