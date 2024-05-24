@@ -54,7 +54,6 @@ func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawD
 		}
 		if len(statute.Title) == 0 {
 			logger.Info("statute is empty, skipping...")
-			return nil
 		}
 
 		// put subdivision chunks into data store
@@ -77,7 +76,7 @@ func ScrapeRawPage(ctx context.Context, objectKey string, rawDataStore core.RawD
 		logger.Info("scraping %s done", objectKey)
 	} else {
 		logger.Info("skipping deleting raw text file \"%s\", some errors found", objectKey)
-		logger.Info("scraping %s completed, some errors...", objectKey)
+		return fmt.Errorf("scraping '%s' completed with errors", objectKey) // sqs will not delete message
 	}
 
 	// success
