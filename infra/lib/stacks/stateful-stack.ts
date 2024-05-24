@@ -38,6 +38,7 @@ export class StatefulStack extends cdk.Stack {
       enforceSSL: true,
       eventBridgeEnabled: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // for easy cleanup of demo
+      lifecycleRules: [{ expiration: cdk.Duration.days(20) }],
     });
 
     this.table1 = new dynamodb.TableV2(this, TABLE1_ID, {
