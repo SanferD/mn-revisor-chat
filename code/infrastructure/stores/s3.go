@@ -105,7 +105,7 @@ func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
 }
 
 func (s3Helper *S3Helper) getChunkObjectKey(chunk core.Chunk) string {
-	return s3Helper.chunkPathPrefix + "/" + chunk.ID
+	return s3Helper.chunkPathPrefix + "/" + chunk.ID + ".txt"
 }
 
 func (s3Helper *S3Helper) validatePrefix(key, prefix string) error {
