@@ -9,7 +9,7 @@ import { execSync } from "child_process";
 import { DualQueue } from "./constructs/dual-sqs";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
-const validCmds = ["crawler", "trigger_crawler", "raw_scraper"];
+const validCmds = ["crawler", "trigger_crawler", "raw_scraper", "invoke_trigger_crawler"];
 
 export function doMakeClean() {
   doMake("clean");
@@ -152,6 +152,16 @@ export function getListPolicy(props: getListPolicyProps): iam.PolicyStatement {
   return new iam.PolicyStatement({
     actions,
     effect: iam.Effect.ALLOW,
+    resources: ["*"],
+  });
+}
+
+export function getListTasksPolicy(cluster: ecs.Cluster): iam.PolicyStatement {
+  return new iam.PolicyStatement({
+    actions: ["ecs:ListTasks"],
+    conditions: {
+      ArnEquals: { "ecs:cluster": cluster.clusterArn },
+    },
     resources: ["*"],
   });
 }

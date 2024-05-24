@@ -7,17 +7,11 @@ import { ConfiguredFunction } from "../constructs/configured-lambda";
 import { DualQueue } from "../constructs/dual-sqs";
 import * as constants from "../constants";
 import * as helpers from "../helpers";
+import { CommonStackProps } from "./common-stack-props";
 
 const RAW_SCRAPER_ID = "raw_scraper";
 
-export interface ScraperStackProps extends cdk.StackProps {
-  vpc: ec2.Vpc;
-  securityGroup: ec2.SecurityGroup;
-  privateIsolatedSubnets: ec2.SubnetSelection;
-  mainBucket: s3.Bucket;
-  urlDQ: DualQueue;
-  rawEventsDQ: DualQueue;
-}
+export interface ScraperStackProps extends CommonStackProps {}
 
 export class ScraperStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ScraperStackProps) {

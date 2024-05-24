@@ -12,7 +12,7 @@ function main(app: cdk.App, config: conf.Config) {
 
   const statefulStack = new stacks.StatefulStack(app, i("stateful-stack"), {});
 
-  const commonProps = {
+  const commonProps: stacks.CommonStackProps = {
     mainBucket: statefulStack.mainBucket,
     privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
     privateWithEgressSubnets: vpcStack.privateWithEgressSubnets,

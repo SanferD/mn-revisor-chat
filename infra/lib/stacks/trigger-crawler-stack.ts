@@ -1,39 +1,52 @@
 import * as cdk from "aws-cdk-lib";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import { CommonStackProps } from "./common-stack-props";
 import { Construct } from "constructs";
 import { ConfiguredFunction } from "../constructs/configured-lambda";
-import { DualQueue } from "../constructs/dual-sqs";
+import { CodeContainerDefinition } from "../constructs/code-container-definition";
+import { ConfiguredCluster } from "../constructs/configured-cluster";
+import { ConfiguredTaskDefinition } from "../constructs/configured-task-definition";
 import * as helpers from "../helpers";
 
-const TRIGGER_CRAWLER_ID = "trigger_crawler";
+const INVOKE_TRIGGER_CRAWLER_CMD = "invoke_trigger_crawler";
+const TRIGGER_CRAWLER_CLUSTER_ID = "trigger-crawler-cluster";
+const TRIGGER_CRAWLER_TASK_DEFINITION_ID = "trigger-crawler-task-definition";
+const TRIGGER_CRAWLER_CMD = "trigger_crawler";
 
-export interface TriggerCrawlerStackProps extends cdk.StackProps {
-  vpc: ec2.Vpc;
-  securityGroup: ec2.SecurityGroup;
-  privateIsolatedSubnets: ec2.SubnetSelection;
-  table1: dynamodb.TableV2;
-  urlDQ: DualQueue;
-  rawEventsDQ: DualQueue;
-}
+export interface TriggerCrawlerStackProps extends CommonStackProps {}
 
 export class TriggerCrawlerStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: TriggerCrawlerStackProps) {
     super(scope, id, props);
 
-    // setup Lambda to trigger crawler
-    const triggerCrawlerFunction = new ConfiguredFunction(this, TRIGGER_CRAWLER_ID, {
+    const triggerCrawlerCluster = new ConfiguredCluster(this, TRIGGER_CRAWLER_CLUSTER_ID, {
+      vpc: props.vpc,
+    });
+
+    const triggerCrawlerTaskDefinition = new ConfiguredTaskDefinition(this, TRIGGER_CRAWLER_TASK_DEFINITION_ID);
+
+    props.rawEventsDQ.src.grantPurge(triggerCrawlerTaskDefinition.taskRole);
+    props.urlDQ.src.grantPurge(triggerCrawlerTaskDefinition.taskRole);
+    props.urlDQ.src.grantSendMessages(triggerCrawlerTaskDefinition.taskRole);
+    props.table1.grantReadWriteData(triggerCrawlerTaskDefinition.taskRole);
+    triggerCrawlerTaskDefinition.addToTaskRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
+
+    new CodeContainerDefinition(this, TRIGGER_CRAWLER_CMD, {
+      taskDefinition: triggerCrawlerTaskDefinition,
       environment: helpers.getEnvironment(props),
+    });
+
+    const fn = new ConfiguredFunction(this, INVOKE_TRIGGER_CRAWLER_CMD, {
+      environment: helpers.getEnvironment({
+        ...props,
+        triggerCrawlerCluster,
+        triggerCrawlerTaskDefinition,
+      }),
+      timeout: cdk.Duration.minutes(15), // deleting all items in ddb takes a while
       securityGroup: props.securityGroup,
       vpc: props.vpc,
       vpcSubnets: props.privateIsolatedSubnets,
     });
-
-    //// configure trigger-crawler permissions
-    props.rawEventsDQ.src.grantPurge(triggerCrawlerFunction);
-    props.urlDQ.src.grantPurge(triggerCrawlerFunction);
-    props.urlDQ.src.grantSendMessages(triggerCrawlerFunction);
-    props.table1.grantReadWriteData(triggerCrawlerFunction);
-    triggerCrawlerFunction.addToRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
+    triggerCrawlerTaskDefinition.grantRun(fn);
+    fn.addToRolePolicy(helpers.getListTasksPolicy(triggerCrawlerCluster));
   }
 }
