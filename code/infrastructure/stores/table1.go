@@ -2,7 +2,9 @@ package stores
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -11,14 +13,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/smithy-go"
 )
 
-const batchSize = 25 // DynamoDB allows a maximum of 25 items per batch write
-const pkURLPrefix = "url#"
-const primaryKey = "pk"
-const secondaryKey = "sk"
-const skURLPrefix = "url#"
-const tableName = "table-1"
+const (
+	extendedRateLimit = 5 * time.Second
+	rateLimit         = time.Second
+	batchSize         = 25 // DynamoDB allows a maximum of 25 items per batch write
+	pkURLPrefix       = "url#"
+	skURLPrefix       = "url#"
+)
 
 type Table1 struct {
 	client    *dynamodb.Client
@@ -49,7 +53,7 @@ func newURLRecordPrimaryKey(url string) table1RecordPrimaryKey {
 	}
 }
 
-func InitializeTable1(ctx context.Context, tableArn string, timeout time.Duration, endpointURL *string) (*Table1, error) {
+func InitializeTable1(ctx context.Context, tableARN string, timeout time.Duration, endpointURL *string) (*Table1, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -61,9 +65,9 @@ func InitializeTable1(ctx context.Context, tableArn string, timeout time.Duratio
 			o.BaseEndpoint = aws.String(*endpointURL)
 		}
 	})
-	tableName, err := getTableName(ctx, client, tableArn, timeout)
+	tableName, err := getTableName(ctx, client, tableARN, timeout)
 	if err != nil {
-		return nil, fmt.Errorf("error getting table-name for table-arn='%s': %v", tableArn, err)
+		return nil, fmt.Errorf("error getting table-name for table-arn='%s': %v", tableARN, err)
 	}
 	return &Table1{client: client, tableName: tableName, timeout: timeout}, nil
 }
@@ -131,17 +135,14 @@ func (table1 *Table1) HasURL(ctx context.Context, url string) (bool, error) {
 }
 
 func (table1 *Table1) DeleteAll(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, table1.timeout)
-	defer cancel()
 	scanPaginator := dynamodb.NewScanPaginator(table1.client, &dynamodb.ScanInput{
 		TableName: &table1.tableName,
 	})
 
 	var writeRequests []types.WriteRequest = make([]types.WriteRequest, 0, batchSize)
 
+	var writeCount int = 0
 	for scanPaginator.HasMorePages() {
-		ctx, cancel := context.WithTimeout(ctx, table1.timeout)
-		defer cancel()
 		scanPage, err := scanPaginator.NextPage(ctx)
 		if err != nil {
 			return fmt.Errorf("error fetching next scan page: %v", err)
@@ -159,7 +160,10 @@ func (table1 *Table1) DeleteAll(ctx context.Context) error {
 
 			// Batch write when we reach batchSize
 			if len(writeRequests) == batchSize {
-				if err := table1.batchWrite(ctx, writeRequests); err != nil {
+				writeCount += 1
+				time.Sleep(rateLimit) // rate limit to 1 rps
+				log.Println("writing number", writeCount)
+				if err := table1.handleBatchWriteWithRetries(ctx, writeRequests); err != nil {
 					return fmt.Errorf("error during batch write: %v", err)
 				}
 				writeRequests = make([]types.WriteRequest, 0, batchSize)
@@ -169,12 +173,48 @@ func (table1 *Table1) DeleteAll(ctx context.Context) error {
 
 	// Write remaining items if any
 	if len(writeRequests) > 0 {
-		if err := table1.batchWrite(ctx, writeRequests); err != nil {
+		writeCount += 1
+		time.Sleep(rateLimit) // rate limit to 1 rps
+		log.Println("writing final number", writeCount)
+		if err := table1.handleBatchWriteWithRetries(ctx, writeRequests); err != nil {
 			return fmt.Errorf("error during final batch write: %v", err)
 		}
 	}
 
 	return nil
+}
+
+func (table1 *Table1) handleBatchWriteWithRetries(ctx context.Context, writeRequests []types.WriteRequest) error {
+	for {
+
+		err := table1.batchWrite(ctx, writeRequests)
+		if err == nil {
+			return nil
+		}
+
+		if isThroughputExceeded(err) {
+			log.Println("Provisioned throughput exceeded, retrying with extended rate limit")
+			time.Sleep(extendedRateLimit)
+			continue
+		}
+
+		if isRetryQuotaExceeded(err) {
+			log.Println("Retry quota exceeded, sleeping before retry")
+			time.Sleep(extendedRateLimit)
+			continue
+		}
+
+		return err
+	}
+}
+
+func isThroughputExceeded(err error) bool {
+	var apiErr smithy.APIError
+	return errors.As(err, &apiErr) && apiErr.ErrorCode() == "ProvisionedThroughputExceededException"
+}
+
+func isRetryQuotaExceeded(err error) bool {
+	return strings.Contains(err.Error(), "retry quota exceeded")
 }
 
 func (table1 *Table1) batchWrite(ctx context.Context, writeRequests []types.WriteRequest) error {
