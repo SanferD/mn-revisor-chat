@@ -1,8 +1,10 @@
-import * as s3 from "aws-cdk-lib/aws-s3";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as constants from "./constants";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "path";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { execSync } from "child_process";
 import { DualQueue } from "./constructs/dual-sqs";
 
@@ -90,6 +92,10 @@ export interface getEnvironmentProps {
   table1?: dynamodb.TableV2;
   urlDQ?: DualQueue;
   rawEventsDQ?: DualQueue;
+  triggerCrawlerTaskDefinition?: ecs.TaskDefinition;
+  triggerCrawlerCluster?: ecs.Cluster;
+  securityGroup?: ec2.SecurityGroup;
+  privateIsolatedSubnets?: ec2.SubnetSelection;
 }
 
 export function getEnvironment(props: getEnvironmentProps): { [key: string]: string } {
@@ -107,6 +113,22 @@ export function getEnvironment(props: getEnvironmentProps): { [key: string]: str
   }
   if (props.rawEventsDQ !== null && props.rawEventsDQ !== undefined) {
     environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsDQ.src.queueArn;
+  }
+  if (props.triggerCrawlerTaskDefinition !== null && props.triggerCrawlerTaskDefinition !== undefined) {
+    environment[constants.TRIGGER_CRAWLER_TASK_DEFINITION_ARN_ENV_NAME] =
+      props.triggerCrawlerTaskDefinition.taskDefinitionArn;
+  }
+  if (props.triggerCrawlerCluster !== null && props.triggerCrawlerCluster !== undefined) {
+    environment[constants.TRIGGER_CRAWLER_CLUSTER_ARN_ENV_NAME] = props.triggerCrawlerCluster.clusterArn;
+  }
+  if (props.securityGroup !== null && props.securityGroup !== undefined) {
+    environment[constants.SECURITY_GROUP_IDS_ENV_NAME] = props.securityGroup.securityGroupId;
+  }
+  if (props.privateIsolatedSubnets !== null && props.privateIsolatedSubnets !== undefined) {
+    const privateIsolatedSubnets: string = props.privateIsolatedSubnets
+      .subnets!.map((subnet) => subnet.subnetId)
+      .join(",");
+    environment[constants.PRIVATE_ISOLATED_SUBNET_IDS_ENV_NAME] = privateIsolatedSubnets;
   }
   return environment;
 }
