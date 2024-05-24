@@ -94,3 +94,8 @@ type MNRevisorStatutesScraper interface {
 	ExtractURLs(io.Reader, MNRevisorPageKind) ([]string, error)
 	ExtractStatute(io.Reader) (Statute, error)
 }
+
+type Invoker interface {
+	InvokeTriggerCrawler(context.Context) error
+	IsTriggerCrawlerAlreadyRunning(context.Context) (bool, error)
+}

@@ -3,6 +3,7 @@ package settings
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -14,15 +15,19 @@ const relativeSettingsFilePath = "../../../settings.env"
 const defaultContextTimeout = 59 * time.Second
 
 type Settings struct {
-	MainBucketName  string        `mapstructure:"MAIN_BUCKET_NAME"`
-	ChunkPathPrefix string        `mapstructure:"CHUNK_PATH_PREFIX"`
-	ContextTimeout  time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
-	DoLogToStdout   bool          `mapstructure:"LOG_TO_STDOUT"`
-	LocalEndpoint   *string       `mapstructure:"LOCAL_ENDPOINT"`
-	RawEventsSQSARN string        `mapstructure:"RAW_EVENTS_SQS_ARN"`
-	RawPathPrefix   string        `mapstructure:"RAW_PATH_PREFIX"`
-	Table1ARN       string        `mapstructure:"TABLE_1_ARN"`
-	URLSQSARN       string        `mapstructure:"URL_SQS_ARN"`
+	MainBucketName           string        `mapstructure:"MAIN_BUCKET_NAME"`
+	ChunkPathPrefix          string        `mapstructure:"CHUNK_PATH_PREFIX"`
+	ContextTimeout           time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
+	DoLogToStdout            bool          `mapstructure:"LOG_TO_STDOUT"`
+	LocalEndpoint            *string       `mapstructure:"LOCAL_ENDPOINT"`
+	RawEventsSQSARN          string        `mapstructure:"RAW_EVENTS_SQS_ARN"`
+	RawPathPrefix            string        `mapstructure:"RAW_PATH_PREFIX"`
+	Table1ARN                string        `mapstructure:"TABLE_1_ARN"`
+	URLSQSARN                string        `mapstructure:"URL_SQS_ARN"`
+	TriggerCrawlerTaskDfnArn string        `mapstructure:"TRIGGER_CRAWLER_TASK_DFN_ARN"`
+	TriggerCrawlerClusterArn string        `mapstructure:"TRIGGER_CRAWLER_CLUSTER_ARN"`
+	SubnetIds                []string      `mapstructure:"PRIVATE_ISOLATED_SUBNET_IDS"`
+	SecurityGroupIds         []string      `mapstructure:"SECURITY_GROUP_IDS"`
 }
 
 const emptySettings = `
@@ -33,6 +38,10 @@ RAW_EVENTS_SQS_ARN=
 RAW_PATH_PREFIX=
 TABLE_1_ARN=
 URL_SQS_ARN=
+TRIGGER_CRAWLER_TASK_DFN_ARN=
+TRIGGER_CRAWLER_CLUSTER_ARN=
+PRIVATE_ISOLATED_SUBNET_IDS=
+SECURITY_GROUP_IDS=
 `
 
 func GetSettings() (*Settings, error) {
@@ -40,6 +49,8 @@ func GetSettings() (*Settings, error) {
 	viper.AutomaticEnv()
 	viper.SetDefault("CONTEXT_TIMEOUT", defaultContextTimeout)
 	viper.SetDefault("LOG_TO_STDOUT", true)
+	viper.SetDefault("TRIGGER_CRAWLER_TASK_DFN_ARN", "")
+	viper.SetDefault("TRIGGER_CRAWLER_CLUSTER_ARN", "")
 
 	// load settings
 
@@ -71,5 +82,6 @@ func GetSettings() (*Settings, error) {
 			settings.LocalEndpoint = nil
 		}
 	}
+	log.Println(settings)
 	return &settings, nil
 }

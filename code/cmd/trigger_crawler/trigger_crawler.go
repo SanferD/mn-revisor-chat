@@ -9,8 +9,6 @@ import (
 	"code/infrastructure/stores"
 	"context"
 	"log"
-
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
@@ -54,14 +52,9 @@ func init() {
 
 }
 
-func HandleRequest(ctx context.Context, urlsEvent URLsEvent) error {
-	logger.Info("Received event", urlsEvent)
-	if err := application.TriggerCrawler(ctx, urlsEvent.Urls, urlQueue, rawEventsQueue, seenURLStore, logger); err != nil {
+func main() {
+	ctx := context.Background()
+	if err := application.TriggerCrawler(ctx, []string{}, urlQueue, rawEventsQueue, seenURLStore, logger); err != nil {
 		logger.Fatal("error on trigger-crawler: %v", err)
 	}
-	return nil
-}
-
-func main() {
-	lambda.Start(HandleRequest)
 }
