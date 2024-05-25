@@ -17,8 +17,7 @@ const (
 	subdivisionPrefix               = "Subdivision "
 	subdPrefix                      = "Subd. "
 	subdTypoPrefix                  = "Subd "
-	repealedSubstring               = "[Repealed,"
-	renumberedSubstring             = "[Renumbered"
+	repealedSubstring               = "[Repealed"
 )
 
 type Scraper struct{}
@@ -183,6 +182,10 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		if subdNoNode == nil {
 			return nil, fmt.Errorf("could not find subdivision headers")
 		}
+		headnote := htmlquery.FindOne(subdNoNode, "/span[@class='headnote']")
+		if headnote == nil { // repealed subdivision
+			continue
+		}
 		subdNoText := htmlquery.InnerText(subdNoNode)
 		var subdNumTitle string
 		if strings.HasPrefix(subdNoText, subdivisionPrefix) {
@@ -201,6 +204,10 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		}
 		subdivNum := subdNumTitleParts[0]
 		heading := strings.TrimSpace(subdNumTitleParts[1])
+		headnoteHeading := strings.TrimSpace(htmlquery.InnerText(headnote))
+		if heading != headnoteHeading {
+			return nil, fmt.Errorf("did not correctly parse heading into headnote heading: heading='%s', headnoteHeading='%s'", heading, headnoteHeading)
+		}
 
 		contentNode := htmlquery.FindOne(subd, contentRelativeToSubdivXPath)
 		var content string
@@ -219,10 +226,8 @@ func (*Scraper) extractSubdivisions(subdivisionDivs []*html.Node) ([]core.Subdiv
 		}
 
 		if len(heading) == 0 {
-			if !strings.Contains(content, repealedSubstring) && !strings.Contains(content, renumberedSubstring) {
-				return nil, fmt.Errorf("could not verify subdivision was repealed")
-			}
-			continue
+			subdStr := htmlquery.InnerText(subd)
+			return nil, fmt.Errorf("could not verify subdivision was repealed: subdiv='%s', content='%s'", subdStr, content)
 		}
 
 		subdivision := core.Subdivision{
