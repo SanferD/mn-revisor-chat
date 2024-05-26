@@ -21,3 +21,4 @@ export const PRIVATE_ISOLATED_SUBNET_IDS_ENV_NAME = "PRIVATE_ISOLATED_SUBNET_IDS
 
 export const SUBDIVISIONS_STATUTES_INDEX_NAME = "subdivisions-vector-index";
 export const SUBDIVISIONS_VECTOR = "subdivision-vector";
+export const MN_STATUTE_KNOWLEDGE_BASE_INSTRUCTION = `This knowledge base contains all Minnesota statute subdivisions. Use it to search for and cite applicable statute subdivisions.`;

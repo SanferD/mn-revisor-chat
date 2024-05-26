@@ -54,41 +54,17 @@ export class StatefulStack extends cdk.Stack {
       timeToLiveAttribute: constants.TTL_ATTRIBUTE, // application sets TTL to reduce storage costs
     });
 
-    /* opensearch */
-    const vectorCollection = new opensearchserverless.VectorCollection(this, VECTOR_COLLECTION_ID);
-
-    const vectorIndex = new opensearch_vectorindex.VectorIndex(this, VECTOR_INDEX_ID, {
-      collection: vectorCollection,
-      indexName: constants.SUBDIVISIONS_STATUTES_INDEX_NAME,
-      vectorField: constants.SUBDIVISIONS_VECTOR,
-      vectorDimensions: 1536,
-      mappings: [
-        {
-          mappingField: "AMAZON_BEDROCK_TEXT_CHUNK",
-          dataType: "text",
-          filterable: true,
-        },
-        {
-          mappingField: "AMAZON_BEDROCK_METADATA",
-          dataType: "text",
-          filterable: false,
-        },
-      ],
-    });
-
+    /* knowledge base */
     this.knowledgeBase = new bedrock.KnowledgeBase(this, KNOWLEDGE_BASE_ID, {
       embeddingsModel: bedrock.BedrockFoundationModel.TITAN_EMBED_TEXT_V1,
-      indexName: vectorIndex.indexName,
-      vectorStore: vectorCollection,
-      vectorField: vectorIndex.vectorField,
-      vectorIndex,
+      instruction: constants.MN_STATUTE_KNOWLEDGE_BASE_INSTRUCTION,
     });
 
     new bedrock.S3DataSource(this, SUBDIVISIONS_DATA_SOURCE_ID, {
-      dataSourceName: DATA_SOURCE_NAME,
       bucket: this.mainBucket,
-      inclusionPrefixes: [constants.CHUNK_OBJECT_PREFIX],
       chunkingStrategy: bedrock.ChunkingStrategy.NONE,
+      dataSourceName: DATA_SOURCE_NAME,
+      inclusionPrefixes: [constants.CHUNK_OBJECT_PREFIX],
       knowledgeBase: this.knowledgeBase,
       overlapPercentage: 0,
     });
