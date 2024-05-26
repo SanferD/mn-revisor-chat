@@ -18,7 +18,15 @@ export const TRIGGER_CRAWLER_TASK_DEFINITION_ARN_ENV_NAME = "TRIGGER_CRAWLER_TAS
 export const TRIGGER_CRAWLER_CLUSTER_ARN_ENV_NAME = "TRIGGER_CRAWLER_CLUSTER_ARN";
 export const SECURITY_GROUP_IDS_ENV_NAME = "SECURITY_GROUP_IDS";
 export const PRIVATE_ISOLATED_SUBNET_IDS_ENV_NAME = "PRIVATE_ISOLATED_SUBNET_IDS";
+export const BEDROCK_AGENT_NAME = "mnrevisor-bedrock-agent";
 
 export const SUBDIVISIONS_STATUTES_INDEX_NAME = "subdivisions-vector-index";
 export const SUBDIVISIONS_VECTOR = "subdivision-vector";
+export const MN_STATUTE_AGENT_INSTRUCTION = `Act as an expert on Minnesota statutes. Answer the questions you are given, citing the relevant statute subdivisions. At the end of your response, include the corresponding statute subdivisions for reference. Must include citations in the response. Example:
+"""
+PROMPT: I want to start a construction project in the North Loop. What are some applicable laws?
+RESPONSE:
+The search results indicate two Minnesota laws that are relevant for construction projects in the North Loop area of Minneapolis: § 469.53 authorizes state funding for public infrastructure projects in the Regional Exchange District, which includes the North Loop. Eligible projects include construction, demolition, and site preparation. § 337.10, subd. 1, prohibits construction contracts in Minnesota from containing provisions that make the contract subject to the laws of another state.
+"""
+`;
 export const MN_STATUTE_KNOWLEDGE_BASE_INSTRUCTION = `This knowledge base contains all Minnesota statute subdivisions. Use it to search for and cite applicable statute subdivisions.`;

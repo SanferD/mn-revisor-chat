@@ -34,6 +34,11 @@ function main(app: cdk.App, config: conf.Config) {
   new stacks.ScraperStack(app, i("scraper-stack"), {
     ...commonProps,
   });
+
+  new stacks.AgentStack(app, i("agent-stack"), {
+    knowledgeBase: statefulStack.knowledgeBase,
+    ...commonProps,
+  });
 }
 
 const app = new cdk.App();
