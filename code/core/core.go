@@ -99,3 +99,7 @@ type Invoker interface {
 	InvokeTriggerCrawler(context.Context) error
 	IsTriggerCrawlerAlreadyRunning(context.Context) (bool, error)
 }
+
+type Agent interface {
+	Ask(context.Context, string, string) (string, error)
+}

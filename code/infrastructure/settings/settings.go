@@ -28,6 +28,8 @@ type Settings struct {
 	TriggerCrawlerClusterArn string        `mapstructure:"TRIGGER_CRAWLER_CLUSTER_ARN"`
 	SubnetIds                []string      `mapstructure:"PRIVATE_ISOLATED_SUBNET_IDS"`
 	SecurityGroupIds         []string      `mapstructure:"SECURITY_GROUP_IDS"`
+	BedrockAgentID           string        `mapstructure:"BEDROCK_AGENT_ID"`
+	BedrockAgentAliasID      string        `mapstructure:"BEDROCK_AGENT_ALIAS_ID"`
 }
 
 const emptySettings = `
@@ -42,6 +44,8 @@ TRIGGER_CRAWLER_TASK_DFN_ARN=
 TRIGGER_CRAWLER_CLUSTER_ARN=
 PRIVATE_ISOLATED_SUBNET_IDS=
 SECURITY_GROUP_IDS=
+BEDROCK_AGENT_ID=
+BEDROCK_AGENT_ALIAS_ID=
 `
 
 func GetSettings() (*Settings, error) {
