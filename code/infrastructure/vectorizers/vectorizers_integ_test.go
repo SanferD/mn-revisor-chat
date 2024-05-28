@@ -24,7 +24,7 @@ func TestVectorizers(t *testing.T) {
 	assert := assert.New(t)
 	mySettings, err := settings.GetSettings()
 	assert.NoError(err, "error on get settings: %v", err)
-	bedrockHelper, err := InitializeBedrockHelper(ctx, mySettings.EmbddingModelID, mySettings.ContextTimeout)
+	bedrockHelper, err := InitializeBedrockHelper(ctx, mySettings.EmbeddingModelID, mySettings.ContextTimeout)
 	assert.NoError(err, "error on initialize bedrock helper: %v", err)
 
 	t.Run("test vectorize chunk", func(t *testing.T) {

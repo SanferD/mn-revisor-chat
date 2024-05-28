@@ -8,11 +8,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.12
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.13.15
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime v1.11.0
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.8.4
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.32.1
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.41.10
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.2
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.32.0
 	github.com/aws/smithy-go v1.20.2
+	github.com/opensearch-project/opensearch-go v1.1.0
+	github.com/opensearch-project/opensearch-go/v4 v4.0.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.19.0
