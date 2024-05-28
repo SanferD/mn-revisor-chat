@@ -24,6 +24,11 @@ type Subdivision struct {
 	Content string
 }
 
+type VectorDocument struct {
+	ID     string
+	Vector []float64
+}
+
 const (
 	MNRevisorPageKindError MNRevisorPageKind = -1
 	StatutesChaptersTable  MNRevisorPageKind = iota
@@ -102,4 +107,8 @@ type Invoker interface {
 
 type Agent interface {
 	Ask(context.Context, string, string) (string, error)
+}
+
+type Vectorizer interface {
+	VectorizeChunk(context.Context, Chunk) (VectorDocument, error)
 }
