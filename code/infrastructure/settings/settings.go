@@ -34,6 +34,12 @@ type Settings struct {
 	SecurityGroupIds         []string `mapstructure:"SECURITY_GROUP_IDS"`
 	// bedrock
 	EmbeddingModelID string `mapstructure:"EMBEDDING_MODEL_ID"`
+	// opensearch
+	OpensearchUsername        string `mapstructure:"OPENSEARCH_USERNAME"`
+	OpensearchPassword        string `mapstructure:"OPENSEARCH_PASSWORD"`
+	OpensearchDomain          string `mapstructure:"OPENSEARCH_DOMAIN"`
+	DoAllowOpensearchInsecure bool   `mapstructure:"DO_ALLOW_OPENSEARCH_INSECURE"`
+	OpensearchIndexName       string `mapstructure:"OPENSEARCH_INDEX_NAME"`
 }
 
 const emptySettings = `
@@ -51,6 +57,11 @@ TRIGGER_CRAWLER_CLUSTER_ARN=
 PRIVATE_ISOLATED_SUBNET_IDS=
 SECURITY_GROUP_IDS=
 EMBEDDING_MODEL_ID=
+OPENSEARCH_USERNAME=
+OPENSEARCH_PASSWORD=
+OPENSEARCH_DOMAIN=
+DO_ALLOW_OPENSEARCH_INSECURE=
+OPENSEARCH_INDEX_NAME=
 `
 const defaultEmbeddingModelID = "amazon.titan-embed-text-v2:0"
 
@@ -62,6 +73,7 @@ func GetSettings() (*Settings, error) {
 	viper.SetDefault("TRIGGER_CRAWLER_TASK_DFN_ARN", "")
 	viper.SetDefault("TRIGGER_CRAWLER_CLUSTER_ARN", "")
 	viper.SetDefault("EMBEDDING_MODEL_ID", defaultEmbeddingModelID)
+	viper.SetDefault("DO_ALLOW_OPENSEARCH_INSECURE", false)
 
 	// load settings
 

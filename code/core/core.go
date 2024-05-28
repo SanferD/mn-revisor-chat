@@ -113,3 +113,7 @@ type Agent interface {
 type Vectorizer interface {
 	VectorizeChunk(context.Context, Chunk) (VectorDocument, error)
 }
+
+type SearchIndex interface {
+	AddVectorDocument(context.Context, VectorDocument) error
+}
