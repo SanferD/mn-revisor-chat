@@ -22,6 +22,8 @@ type S3Helper struct {
 	timeout         time.Duration
 }
 
+var emptyChunk = core.Chunk{}
+
 func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix, chunkPathPrefix string, timeout time.Duration, endpointURL *string) (*S3Helper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -40,8 +42,18 @@ func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix, chunkPat
 	return &S3Helper{client: client, bucketName: bucketName, rawPathPrefix: rawPathPrefix, chunkPathPrefix: chunkPathPrefix, timeout: timeout}, nil
 }
 
+func (s3Helper *S3Helper) GetChunk(ctx context.Context, chunkFileName string) (core.Chunk, error) {
+	key := s3Helper.getChunkObjectKey(chunkFileName)
+	body, err := s3Helper.getObject(ctx, key)
+	if err != nil {
+		return emptyChunk, fmt.Errorf("error on s3 get object: %v", err)
+	}
+	chunk := core.Chunk{ID: chunkFileName, Body: body}
+	return chunk, nil
+}
+
 func (s3Helper *S3Helper) PutChunk(ctx context.Context, chunk core.Chunk) error {
-	key := s3Helper.getChunkObjectKey(chunk)
+	key := s3Helper.getChunkObjectKey(chunk.ID)
 	body := strings.NewReader(chunk.Body)
 	return s3Helper.putFile(ctx, key, body)
 }
@@ -104,8 +116,8 @@ func (s3Helper *S3Helper) getRawObjectKey(fileName string) string {
 	return s3Helper.rawPathPrefix + "/" + fileName
 }
 
-func (s3Helper *S3Helper) getChunkObjectKey(chunk core.Chunk) string {
-	return s3Helper.chunkPathPrefix + "/" + chunk.ID + ".txt"
+func (s3Helper *S3Helper) getChunkObjectKey(fileName string) string {
+	return s3Helper.chunkPathPrefix + "/" + fileName + ".txt"
 }
 
 func (s3Helper *S3Helper) validatePrefix(key, prefix string) error {

@@ -84,7 +84,7 @@ func TestS3Helper(t *testing.T) {
 		assert.Error(t, err, "get text file was supposed to receive an error after deletion, fileName=%s", fileName)
 	})
 
-	t.Run("test PutChunk", func(t *testing.T) {
+	t.Run("test PutChunk, GetChunk", func(t *testing.T) {
 
 		chunks := helpers.Statute2SubdivisionChunks(core.TestStatute1)
 		for _, chunk := range chunks {
@@ -93,11 +93,11 @@ func TestS3Helper(t *testing.T) {
 		}
 
 		for _, chunk := range chunks {
-			chunkKey := s3Helper.getChunkObjectKey(chunk)
-			foundChunk, err := s3Helper.getObject(ctx, chunkKey)
+			foundChunk, err := s3Helper.GetChunk(ctx, chunk.ID)
 			assert.NoError(t, err, "error on get object: %v", err)
-			assert.Equal(t, chunk.Body, foundChunk, "chunk that was put is not equal to chunk that was read")
+			assert.Equal(t, chunk, foundChunk, "chunk that was put is not equal to chunk that was read")
 
+			chunkKey := s3Helper.getChunkObjectKey(chunk.ID)
 			s3Helper.deleteObject(ctx, chunkKey)
 		}
 

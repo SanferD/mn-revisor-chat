@@ -88,6 +88,7 @@ type RawDataStore interface {
 
 type ChunksDataStore interface {
 	PutChunk(context.Context, Chunk) error
+	GetChunk(context.Context, string) (Chunk, error)
 }
 
 type WebClient interface {
