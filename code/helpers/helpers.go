@@ -43,3 +43,11 @@ func Statute2SubdivisionChunks(statute core.Statute) []core.Chunk {
 	return chunks
 
 }
+
+func ChunkObjectKeyToID(chunkObjectKey string) string {
+	chunkFileNameParts := strings.Split(chunkObjectKey, "/")
+	chunkFileName := chunkFileNameParts[len(chunkFileNameParts)-1]
+	chunkIDParts := strings.Split(chunkFileName, ".")
+	chunkID := strings.Join(chunkIDParts[:len(chunkIDParts)-1], ".")
+	return chunkID
+}
