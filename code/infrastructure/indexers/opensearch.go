@@ -46,6 +46,14 @@ type OpenSearchIndexerHelper struct {
 	logger    core.Logger
 }
 
+type SearchResponse struct {
+	Hits struct {
+		Hits []struct {
+			Source json.RawMessage `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
 type ErrorResponse struct {
 	Error struct {
 		RootCause []struct {
@@ -134,6 +142,18 @@ func (osiHelper *OpenSearchIndexerHelper) AddVectorDocument(ctx context.Context,
 	return nil
 }
 
+func (osiHelper *OpenSearchIndexerHelper) FindMatchingChunkIDs(ctx context.Context, vectorDocument core.VectorDocument) ([]string, error) {
+	results, err := osiHelper.search(ctx, vectorDocument.Vector, findMatchesK)
+	if err != nil {
+		return nil, fmt.Errorf("error on search: %v", err)
+	}
+	var chunkIDs []string = make([]string, 0, len(results))
+	for _, result := range results {
+		chunkIDs = append(chunkIDs, result.ID)
+	}
+	return chunkIDs, nil
+}
+
 func (osiHelper *OpenSearchIndexerHelper) addToIndex(ctx context.Context, vectorDocument core.VectorDocument) error {
 	ctx, cancel := context.WithTimeout(ctx, osiHelper.timeout)
 	defer cancel()
@@ -158,4 +178,62 @@ func (osiHelper *OpenSearchIndexerHelper) addToIndex(ctx context.Context, vector
 		return fmt.Errorf("failed to add document to index: received status-code=%d, body=%s", resp.StatusCode, string(bytes))
 	}
 	return nil
+}
+
+func (osiHelper *OpenSearchIndexerHelper) search(ctx context.Context, embeddings []float64, k int) ([]core.VectorDocument, error) {
+	ctx, cancel := context.WithTimeout(ctx, osiHelper.timeout)
+	defer cancel()
+	body := map[string]interface{}{
+		"size": k,
+		"query": map[string]interface{}{
+			"script_score": map[string]interface{}{
+				"query": map[string]interface{}{
+					"match_all": map[string]interface{}{},
+				},
+				"script": map[string]interface{}{
+					"source": "knn_score",
+					"lang":   "knn",
+					"params": map[string]interface{}{
+						"field":       "vector",
+						"query_value": embeddings,
+						"space_type":  "cosinesimil",
+					},
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(body); err != nil {
+		return nil, fmt.Errorf("error on encoding search request: %v", err)
+	}
+	searchRequest := opensearchapi.SearchRequest{
+		Index: []string{osiHelper.indexName},
+		Body:  &buf,
+	}
+	response, err := searchRequest.Do(ctx, osiHelper.client)
+	if err != nil {
+		return nil, fmt.Errorf("error on Do search request: %v", err)
+	}
+	defer response.Body.Close()
+
+	if response.IsError() {
+		return nil, fmt.Errorf("received error response from opensearch api: %s", response.String())
+	}
+
+	var searchResponse SearchResponse
+	if err := json.NewDecoder(response.Body).Decode(&searchResponse); err != nil {
+		return nil, fmt.Errorf("error on decoding search response: %v", err)
+	}
+
+	results := make([]core.VectorDocument, len(searchResponse.Hits.Hits))
+	for i, hit := range searchResponse.Hits.Hits {
+		var source core.VectorDocument
+		if err := json.Unmarshal(hit.Source, &source); err != nil {
+			return nil, fmt.Errorf("error on unmarshalling hit source: %v", err)
+		}
+		results[i] = source
+	}
+
+	return results, nil
 }
