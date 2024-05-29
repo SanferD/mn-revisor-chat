@@ -41,7 +41,7 @@ export class TriggerCrawlerStack extends cdk.Stack {
         triggerCrawlerCluster,
         triggerCrawlerTaskDefinition,
       }),
-      timeout: cdk.Duration.minutes(15), // deleting all items in ddb takes a while
+      timeout: cdk.Duration.minutes(3), // at most 3 minutes to start the trigger crawler ecs task
       securityGroup: props.securityGroup,
       vpc: props.vpc,
       vpcSubnets: props.privateIsolatedSubnets,
