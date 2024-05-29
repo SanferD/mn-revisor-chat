@@ -111,6 +111,7 @@ type Agent interface {
 }
 
 type Vectorizer interface {
+	Vectorize(context.Context, string) (VectorDocument, error)
 	VectorizeChunk(context.Context, Chunk) (VectorDocument, error)
 }
 

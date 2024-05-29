@@ -14,9 +14,19 @@ type test struct {
 	vectorDocument core.VectorDocument
 }
 
+type vectorizeTestCase struct {
+	body           string
+	vectorDocument core.VectorDocument
+}
+
 var testCases = []test{
 	{chunk: core.Chunk11, vectorDocument: core.VectorDocument11},
 	{chunk: core.Chunk12, vectorDocument: core.VectorDocument12},
+}
+
+var vectorizeTest = vectorizeTestCase{
+	body:           core.Prompt,
+	vectorDocument: core.PromptVD,
 }
 
 func TestVectorizers(t *testing.T) {
@@ -33,5 +43,11 @@ func TestVectorizers(t *testing.T) {
 			assert.NoError(err, "error on vectorize chunk: %v", err)
 			assert.Equal(testCase.vectorDocument, vectorDocument, "vector documents are not equal")
 		}
+	})
+
+	t.Run("test vectorize", func(t *testing.T) {
+		vd, err := bedrockHelper.Vectorize(ctx, vectorizeTest.body)
+		assert.NoError(err, "error on vectorize: %v", err)
+		assert.Equal(vd, vectorizeTest.vectorDocument, "vector documents are not equal")
 	})
 }

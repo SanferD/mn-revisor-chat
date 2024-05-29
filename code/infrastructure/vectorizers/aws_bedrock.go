@@ -55,6 +55,14 @@ func (bedrockHelper *BedrockHelper) VectorizeChunk(ctx context.Context, chunk co
 	return core.VectorDocument{ID: chunk.ID, Vector: embeddings}, nil
 }
 
+func (bedrockHelper *BedrockHelper) Vectorize(ctx context.Context, content string) (core.VectorDocument, error) {
+	embeddings, err := bedrockHelper.getEmbeddings(ctx, content)
+	if err != nil {
+		return emptyVD, fmt.Errorf("error on get embeddings: %v", err)
+	}
+	return core.VectorDocument{ID: "", Vector: embeddings}, nil
+}
+
 func (bedrockHelper *BedrockHelper) getEmbeddings(ctx context.Context, inputText string) ([]float64, error) {
 	ctx, cancel := context.WithTimeout(ctx, bedrockHelper.timeout)
 	defer cancel()
