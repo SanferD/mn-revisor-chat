@@ -101,6 +101,6 @@ func GetSettings() (*Settings, error) {
 			settings.LocalEndpoint = nil
 		}
 	}
-	log.Println(settings)
+	log.Printf("%+v\n", settings)
 	return &settings, nil
 }
