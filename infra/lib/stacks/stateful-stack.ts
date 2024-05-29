@@ -1,34 +1,35 @@
+import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
 import { Construct } from "constructs";
-import { bedrock } from "@cdklabs/generative-ai-cdk-constructs";
-import { opensearchserverless, opensearch_vectorindex } from "@cdklabs/generative-ai-cdk-constructs";
 import { DualQueue } from "../constructs/dual-sqs";
 import { S3Rule } from "../constructs/s3-rule";
 import * as constants from "../constants";
 
-const DATA_SOURCE_NAME = "mn-revisor-statute-subdivisions";
-const KNOWLEDGE_BASE_ID = "knowledge-base";
 const MAIN_BUCKET_ID = "main-bucket";
+const OPENSEARCH_DOMAIN_ID = "opensearch_domain";
 const PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID = "put-raw-events-to-raw-events-dq-rule";
 const RAW_EVENTS_DQ_ID = "raw-events-dq";
-const SUBDIVISIONS_DATA_SOURCE_ID = "subdivisions-data-source";
 const TABLE1_ID = "table-1";
 const URL_DQ_ID = "url-dq";
-const VECTOR_COLLECTION_ID = "vector-collection";
-const VECTOR_INDEX_ID = "vector-index";
 
-export interface StatefulStackProps extends cdk.StackProps {}
+export interface StatefulStackProps extends cdk.StackProps {
+  azCount: number;
+  privateIsolatedSubnets: ec2.SubnetSelection;
+  securityGroup: ec2.SecurityGroup;
+  vpc: ec2.Vpc;
+}
 
 export class StatefulStack extends cdk.Stack {
   readonly mainBucket: s3.Bucket;
   readonly table1: dynamodb.TableV2;
   readonly urlDQ: DualQueue;
   readonly rawEventsDQ: DualQueue;
-  readonly knowledgeBase: bedrock.KnowledgeBase;
+  readonly toIndexDQ: DualQueue;
+  readonly opensearchDomain: opensearch.Domain;
 
   constructor(scope: Construct, id: string, props: StatefulStackProps) {
     super(scope, id, props);
@@ -54,19 +55,24 @@ export class StatefulStack extends cdk.Stack {
       timeToLiveAttribute: constants.TTL_ATTRIBUTE, // application sets TTL to reduce storage costs
     });
 
-    /* knowledge base */
-    this.knowledgeBase = new bedrock.KnowledgeBase(this, KNOWLEDGE_BASE_ID, {
-      embeddingsModel: bedrock.BedrockFoundationModel.TITAN_EMBED_TEXT_V1,
-      instruction: constants.MN_STATUTE_KNOWLEDGE_BASE_INSTRUCTION,
-    });
-
-    new bedrock.S3DataSource(this, SUBDIVISIONS_DATA_SOURCE_ID, {
-      bucket: this.mainBucket,
-      chunkingStrategy: bedrock.ChunkingStrategy.NONE,
-      dataSourceName: DATA_SOURCE_NAME,
-      inclusionPrefixes: [constants.CHUNK_OBJECT_PREFIX],
-      knowledgeBase: this.knowledgeBase,
-      overlapPercentage: 0,
+    /* opensearch */
+    const isMultiAz = props.azCount > 1;
+    this.opensearchDomain = new opensearch.Domain(this, OPENSEARCH_DOMAIN_ID, {
+      capacity: {
+        dataNodeInstanceType: "r5.large.search",
+        dataNodes: 1,
+        multiAzWithStandbyEnabled: isMultiAz,
+      },
+      enableAutoSoftwareUpdate: true,
+      enableVersionUpgrade: true,
+      encryptionAtRest: { enabled: true },
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      securityGroups: [props.securityGroup],
+      version: opensearch.EngineVersion.OPENSEARCH_2_11,
+      vpc: props.vpc,
+      vpcSubnets: [props.privateIsolatedSubnets],
     });
 
     /* queues for data transformation along with triggers */
