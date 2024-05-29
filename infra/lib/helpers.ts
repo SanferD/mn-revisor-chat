@@ -9,7 +9,7 @@ import { execSync } from "child_process";
 import { DualQueue } from "./constructs/dual-sqs";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
-const validCmds = ["crawler", "trigger_crawler", "raw_scraper", "invoke_trigger_crawler"];
+const validCmds = ["crawler", "trigger_crawler", "raw_scraper", "invoke_trigger_crawler", "indexer"];
 
 export function doMakeClean() {
   doMake("clean");
