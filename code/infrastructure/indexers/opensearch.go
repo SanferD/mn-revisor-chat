@@ -20,7 +20,6 @@ import (
 )
 
 const findMatchesK = 100
-const subdivisionKNNIndexName = "subdivision-knn"
 const indexSettingsForKNNEmbeddings = `{
 	"settings": {
 		"index": {
@@ -44,9 +43,18 @@ type OpenSearchIndexerHelper struct {
 	client    *opensearch.Client
 	indexName string
 	timeout   time.Duration
+	logger    core.Logger
 }
 
-func InitializeOpenSearchIndexerHelper(ctx context.Context, username, password, domain string, doInsecureSkipVerify bool, indexName string, timeout time.Duration) (*OpenSearchIndexerHelper, error) {
+type ErrorResponse struct {
+	Error struct {
+		RootCause []struct {
+			Type string `json:"type"`
+		} `json:"root_cause"`
+	} `json:"error"`
+}
+
+func InitializeOpenSearchIndexerHelper(ctx context.Context, username, password, domain string, doInsecureSkipVerify bool, indexName string, timeout time.Duration, logger core.Logger) (*OpenSearchIndexerHelper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	opensearchCfg := opensearch.Config{
@@ -54,6 +62,7 @@ func InitializeOpenSearchIndexerHelper(ctx context.Context, username, password, 
 		Username:  username,
 		Password:  password,
 	}
+
 	if !helpers.IsLocalhostURL(domain) {
 		awsCfg, err := config.LoadDefaultConfig(ctx)
 		if err != nil {
@@ -64,17 +73,19 @@ func InitializeOpenSearchIndexerHelper(ctx context.Context, username, password, 
 			return nil, fmt.Errorf("error on creating new signer for 'es' service: %v", err)
 		}
 	}
+
+	transport := &http.Transport{}
 	if doInsecureSkipVerify {
-		opensearchCfg.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+	opensearchCfg.Transport = transport
+
 	client, err := opensearch.NewClient(opensearchCfg)
 	if err != nil {
 		return nil, fmt.Errorf("error on creating new opensearch client: %v", err)
 	}
 
-	osiHelper := &OpenSearchIndexerHelper{client: client, indexName: indexName, timeout: timeout}
+	osiHelper := &OpenSearchIndexerHelper{client: client, indexName: indexName, timeout: timeout, logger: logger}
 	if err := osiHelper.createIndex(ctx); err != nil {
 		return nil, fmt.Errorf("error on creating index: %v", err)
 	}
@@ -82,22 +93,12 @@ func InitializeOpenSearchIndexerHelper(ctx context.Context, username, password, 
 }
 
 func (osiHelper *OpenSearchIndexerHelper) createIndex(ctx context.Context) error {
+	logger := osiHelper.logger
 	ctx, cancel := context.WithTimeout(ctx, osiHelper.timeout)
 	defer cancel()
-	// Check if the index already exists
-	existsReq := opensearchapi.IndicesExistsRequest{
-		Index: []string{osiHelper.indexName},
-	}
-	existsResp, err := existsReq.Do(ctx, osiHelper.client)
-	if err != nil {
-		return fmt.Errorf("failed to check if index exists: %v", err)
-	}
-	if existsResp.StatusCode == 200 {
-		// Index already exists
-		return nil
-	}
 
 	// Create the index if it does not exist
+	logger.Debug("creating index...")
 	settings := strings.NewReader(indexSettingsForKNNEmbeddings)
 	req := opensearchapi.IndicesCreateRequest{
 		Index: osiHelper.indexName,
@@ -105,9 +106,21 @@ func (osiHelper *OpenSearchIndexerHelper) createIndex(ctx context.Context) error
 	}
 	createResp, err := req.Do(ctx, osiHelper.client)
 	if err != nil {
-		return fmt.Errorf("failed to create index: %v", err)
+		return fmt.Errorf("failed to create index: %v, response=%s", err, createResp.String())
 	}
 	if createResp.IsError() {
+		var values ErrorResponse
+		contents, err := io.ReadAll(createResp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to readall from response body: %v", err)
+		}
+		if err = json.Unmarshal(contents, &values); err != nil {
+			return fmt.Errorf("failed to unmarshal string: %v", err)
+		}
+		if values.Error.RootCause[0].Type == "resource_already_exists_exception" {
+			logger.Debug("index already exists...")
+			return nil
+		}
 		return fmt.Errorf("failed to create index: response=%s", createResp.String())
 	}
 
