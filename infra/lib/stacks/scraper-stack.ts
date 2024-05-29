@@ -1,10 +1,7 @@
 import * as cdk from "aws-cdk-lib";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as eventsources from "aws-cdk-lib/aws-lambda-event-sources";
-import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { ConfiguredFunction } from "../constructs/configured-lambda";
-import { DualQueue } from "../constructs/dual-sqs";
 import * as constants from "../constants";
 import * as helpers from "../helpers";
 import { CommonStackProps } from "./common-stack-props";
@@ -20,7 +17,7 @@ export class ScraperStack extends cdk.Stack {
     // trigger scraper lambda on rawEventsDQ messages
     const scraperFunction = new ConfiguredFunction(this, RAW_SCRAPER_ID, {
       environment: helpers.getEnvironment(props),
-      timeout: cdk.Duration.seconds(150),
+      timeout: constants.SCRAPER_TIMEOUT_DURATION,
       securityGroup: props.securityGroup,
       vpc: props.vpc,
       vpcSubnets: props.privateIsolatedSubnets,

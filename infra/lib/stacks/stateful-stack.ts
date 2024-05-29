@@ -71,7 +71,11 @@ export class StatefulStack extends cdk.Stack {
 
     /* queues for data transformation along with triggers */
     this.urlDQ = new DualQueue(this, URL_DQ_ID, {});
-    this.rawEventsDQ = new DualQueue(this, RAW_EVENTS_DQ_ID, {});
+    this.rawEventsDQ = new DualQueue(this, RAW_EVENTS_DQ_ID, {
+      src: {
+        visibilityTimeout: constants.SCRAPER_TIMEOUT_DURATION,
+      },
+    });
 
     // send PutObject events over s3://main-bucket/raw/* to the raw-events queue
     new S3Rule(this, PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID, {
