@@ -41,6 +41,10 @@ function main(app: cdk.App, config: conf.Config) {
   new stacks.ScraperStack(app, i("scraper-stack"), {
     ...commonProps,
   });
+
+  new stacks.IndexerStack(app, i("indexer-stack"), {
+    ...commonProps,
+  });
 }
 
 const app = new cdk.App();

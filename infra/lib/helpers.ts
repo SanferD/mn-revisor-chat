@@ -184,3 +184,14 @@ export function getListTasksPolicy(cluster: ecs.Cluster): iam.PolicyStatement {
     resources: ["*"],
   });
 }
+
+export function getBedrockInvokePolicy(...modelIDs: string[]): iam.PolicyStatement {
+  if (modelIDs.length == 0) {
+    throw new Error("modelIDs must be specified");
+  }
+  return new iam.PolicyStatement({
+    effect: iam.Effect.ALLOW,
+    actions: ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+    resources: modelIDs.map((modelID) => `arn:aws:bedrock:*::foundation-model/${modelID}`),
+  });
+}
