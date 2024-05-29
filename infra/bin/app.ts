@@ -10,7 +10,12 @@ function main(app: cdk.App, config: conf.Config) {
 
   const vpcStack = new stacks.VpcStack(app, i("vpc-stack"), { azCount: config.azCount });
 
-  const statefulStack = new stacks.StatefulStack(app, i("stateful-stack"), {});
+  const statefulStack = new stacks.StatefulStack(app, i("stateful-stack"), {
+    azCount: config.azCount,
+    privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
+    securityGroup: vpcStack.securityGroup,
+    vpc: vpcStack.vpc,
+  });
 
   const commonProps: stacks.CommonStackProps = {
     mainBucket: statefulStack.mainBucket,

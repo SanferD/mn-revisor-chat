@@ -12,9 +12,11 @@ import * as constants from "../constants";
 const MAIN_BUCKET_ID = "main-bucket";
 const OPENSEARCH_DOMAIN_ID = "opensearch_domain";
 const PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID = "put-raw-events-to-raw-events-dq-rule";
+const PUT_CHUNK_EVENTS_TO_TO_INDEX_DQ_RULE_ID = "chunk-events-to-to-index-dq-rule";
 const RAW_EVENTS_DQ_ID = "raw-events-dq";
 const TABLE1_ID = "table-1";
 const URL_DQ_ID = "url-dq";
+const TO_INDEX_DQ_ID = "chunk-dq";
 
 export interface StatefulStackProps extends cdk.StackProps {
   azCount: number;
@@ -82,12 +84,24 @@ export class StatefulStack extends cdk.Stack {
         visibilityTimeout: constants.SCRAPER_TIMEOUT_DURATION,
       },
     });
+    this.toIndexDQ = new DualQueue(this, TO_INDEX_DQ_ID, {
+      src: {
+        visibilityTimeout: constants.INDEXER_TIMEOUT_DURATION,
+      },
+    });
 
     // send PutObject events over s3://main-bucket/raw/* to the raw-events queue
     new S3Rule(this, PUT_RAW_EVENTS_TO_RAW_EVENTS_DQ_RULE_ID, {
       bucket: this.mainBucket,
       prefix: constants.RAW_OBJECT_PREFIX_PATH,
       targets: [new targets.SqsQueue(this.rawEventsDQ.src)],
+    });
+
+    // send PutObject events over s3://main-bucket/chunk/* to the chunk queue
+    new S3Rule(this, PUT_CHUNK_EVENTS_TO_TO_INDEX_DQ_RULE_ID, {
+      bucket: this.mainBucket,
+      prefix: constants.CHUNK_OBJECT_PREFIX_PATH,
+      targets: [new targets.SqsQueue(this.toIndexDQ.src)],
     });
   }
 }

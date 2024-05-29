@@ -10,6 +10,7 @@ export const RAW_OBJECT_PREFIX_PATH = "raw/";
 export const RAW_OBJECT_PREFIX_PATH_WILDCARD = "raw/*";
 
 export const SCRAPER_TIMEOUT_DURATION = cdk.Duration.minutes(3);
+export const INDEXER_TIMEOUT_DURATION = cdk.Duration.minutes(5);
 
 export const RAW_PATH_PREFIX_ENV_NAME = "RAW_PATH_PREFIX";
 export const CHUNK_PATH_PREFIX_ENV_NAME = "CHUNK_PATH_PREFIX";
