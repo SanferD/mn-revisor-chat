@@ -6,9 +6,9 @@ import (
 	"fmt"
 )
 
-func Index(ctx context.Context, chunkFileName string, chunksDataStore core.ChunksDataStore, vectorizer core.Vectorizer, searchIndex core.SearchIndex, logger core.Logger) error {
-	logger.Info("getting chunk with fileName=%s", chunkFileName)
-	chunk, err := chunksDataStore.GetChunk(ctx, chunkFileName)
+func Index(ctx context.Context, chunkID string, chunksDataStore core.ChunksDataStore, vectorizer core.Vectorizer, searchIndex core.SearchIndex, logger core.Logger) error {
+	logger.Info("getting chunk with chunkID=%s", chunkID)
+	chunk, err := chunksDataStore.GetChunk(ctx, chunkID)
 	if err != nil {
 		return fmt.Errorf("error on get chunk: %v", err)
 	}
@@ -21,6 +21,6 @@ func Index(ctx context.Context, chunkFileName string, chunksDataStore core.Chunk
 	if err = searchIndex.AddVectorDocument(ctx, vectorDocument); err != nil {
 		return fmt.Errorf("error on adding vector document: %v", err)
 	}
-	logger.Info("successfully indexed chunk wtih name chunkFileName=%s", chunkFileName)
+	logger.Info("successfully indexed chunk wtih name chunkID=%s", chunkID)
 	return nil
 }
