@@ -14,6 +14,7 @@ export const MAIN_BUCKET_NAME_ENV_NAME = "MAIN_BUCKET_NAME";
 export const TABLE_1_ARN_ENV_NAME = "TABLE_1_ARN";
 export const URL_SQS_ARN_ENV_NAME = "URL_SQS_ARN";
 export const RAW_EVENTS_SQS_ARN_ENV_NAME = "RAW_EVENTS_SQS_ARN";
+export const TO_INDEX_SQS_ARN_ENV_NAME = "TO_INDEX_SQS_ARN";
 export const TRIGGER_CRAWLER_TASK_DEFINITION_ARN_ENV_NAME = "TRIGGER_CRAWLER_TASK_DFN_ARN";
 export const TRIGGER_CRAWLER_CLUSTER_ARN_ENV_NAME = "TRIGGER_CRAWLER_CLUSTER_ARN";
 export const SECURITY_GROUP_IDS_ENV_NAME = "SECURITY_GROUP_IDS";
@@ -30,3 +31,10 @@ The search results indicate two Minnesota laws that are relevant for constructio
 """
 `;
 export const MN_STATUTE_KNOWLEDGE_BASE_INSTRUCTION = `This knowledge base contains all Minnesota statute subdivisions. Use it to search for and cite applicable statute subdivisions.`;
+
+export const ADMIN = "admin";
+export const VECTOR_INDEX_NAME = "subdivision-knn";
+export const OPENSEARCH_USERNAME_ENV_NAME = "OPENSEARCH_USERNAME";
+export const OPENSEARCH_PASSWORD_ENV_NAME = "OPENSEARCH_PASSWORD";
+export const OPENSEARCH_DOMAIN_ENV_NAME = "OPENSEARCH_DOMAIN";
+export const OPENSEARCH_INDEX_NAME_ENV_NAME = "OPENSEARCH_INDEX_NAME";

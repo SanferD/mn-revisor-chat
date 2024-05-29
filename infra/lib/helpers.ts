@@ -7,6 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { execSync } from "child_process";
 import { DualQueue } from "./constructs/dual-sqs";
+import { aws_opensearchservice as opensearchservice } from "aws-cdk-lib";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
 const validCmds = ["crawler", "trigger_crawler", "raw_scraper", "invoke_trigger_crawler", "indexer"];
@@ -88,47 +89,65 @@ export function getRepositoryDirectory(): string {
 }
 
 export interface getEnvironmentProps {
+  // s3
   mainBucket?: s3.Bucket;
+  // ddb
   table1?: dynamodb.TableV2;
+  // sqs
   urlDQ?: DualQueue;
   rawEventsDQ?: DualQueue;
+  toIndexDQ?: DualQueue;
+  // ecs
   triggerCrawlerTaskDefinition?: ecs.TaskDefinition;
   triggerCrawlerCluster?: ecs.Cluster;
+  // vpc
   securityGroup?: ec2.SecurityGroup;
   privateIsolatedSubnets?: ec2.SubnetSelection;
+  // opensearch
+  opensearchDomain?: opensearchservice.Domain;
 }
 
 export function getEnvironment(props: getEnvironmentProps): { [key: string]: string } {
   let environment: { [key: string]: string } = {};
   environment[constants.RAW_PATH_PREFIX_ENV_NAME] = constants.RAW_OBJECT_PREFIX;
   environment[constants.CHUNK_PATH_PREFIX_ENV_NAME] = constants.CHUNK_OBJECT_PREFIX;
-  if (props.mainBucket !== null && props.mainBucket !== undefined) {
+  if (props.mainBucket) {
     environment[constants.MAIN_BUCKET_NAME_ENV_NAME] = props.mainBucket.bucketName;
   }
-  if (props.table1 !== null && props.table1 !== undefined) {
+  if (props.table1) {
     environment[constants.TABLE_1_ARN_ENV_NAME] = props.table1.tableArn;
   }
-  if (props.urlDQ !== null && props.urlDQ !== undefined) {
+  if (props.urlDQ) {
     environment[constants.URL_SQS_ARN_ENV_NAME] = props.urlDQ.src.queueArn;
   }
-  if (props.rawEventsDQ !== null && props.rawEventsDQ !== undefined) {
+  if (props.rawEventsDQ) {
     environment[constants.RAW_EVENTS_SQS_ARN_ENV_NAME] = props.rawEventsDQ.src.queueArn;
   }
-  if (props.triggerCrawlerTaskDefinition !== null && props.triggerCrawlerTaskDefinition !== undefined) {
+  if (props.toIndexDQ) {
+    environment[constants.TO_INDEX_SQS_ARN_ENV_NAME] = props.toIndexDQ.src.queueArn;
+  }
+  if (props.triggerCrawlerTaskDefinition) {
     environment[constants.TRIGGER_CRAWLER_TASK_DEFINITION_ARN_ENV_NAME] =
       props.triggerCrawlerTaskDefinition.taskDefinitionArn;
   }
-  if (props.triggerCrawlerCluster !== null && props.triggerCrawlerCluster !== undefined) {
+  if (props.triggerCrawlerCluster) {
     environment[constants.TRIGGER_CRAWLER_CLUSTER_ARN_ENV_NAME] = props.triggerCrawlerCluster.clusterArn;
   }
-  if (props.securityGroup !== null && props.securityGroup !== undefined) {
+  if (props.securityGroup) {
     environment[constants.SECURITY_GROUP_IDS_ENV_NAME] = props.securityGroup.securityGroupId;
   }
-  if (props.privateIsolatedSubnets !== null && props.privateIsolatedSubnets !== undefined) {
+  if (props.privateIsolatedSubnets) {
     const privateIsolatedSubnets: string = props.privateIsolatedSubnets
       .subnets!.map((subnet) => subnet.subnetId)
       .join(",");
     environment[constants.PRIVATE_ISOLATED_SUBNET_IDS_ENV_NAME] = privateIsolatedSubnets;
+  }
+  if (props.opensearchDomain) {
+    let ep = "https://" + props.opensearchDomain.domainEndpoint + ":443";
+    environment[constants.OPENSEARCH_USERNAME_ENV_NAME] = constants.ADMIN;
+    environment[constants.OPENSEARCH_PASSWORD_ENV_NAME] = constants.ADMIN;
+    environment[constants.OPENSEARCH_DOMAIN_ENV_NAME] = ep;
+    environment[constants.OPENSEARCH_INDEX_NAME_ENV_NAME] = constants.VECTOR_INDEX_NAME;
   }
   return environment;
 }
