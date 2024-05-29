@@ -25,6 +25,7 @@ type Settings struct {
 	// sqs
 	URLSQSARN       string `mapstructure:"URL_SQS_ARN"`
 	RawEventsSQSARN string `mapstructure:"RAW_EVENTS_SQS_ARN"`
+	ToIndexSQSARN   string `mapstructure:"TO_INDEX_SQS_ARN"`
 	// ddb
 	Table1ARN string `mapstructure:"TABLE_1_ARN"`
 	// ecs
@@ -51,6 +52,7 @@ CHUNK_PATH_PREFIX=
 RAW_PATH_PREFIX=
 URL_SQS_ARN=
 RAW_EVENTS_SQS_ARN=
+TO_INDEX_SQS_ARN=
 TABLE_1_ARN=
 TRIGGER_CRAWLER_TASK_DFN_ARN=
 TRIGGER_CRAWLER_CLUSTER_ARN=
