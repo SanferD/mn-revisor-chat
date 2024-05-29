@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -14,20 +15,31 @@ import (
 )
 
 const defaultClientTimeout = 20 * time.Second
+const promptAugment1 = "answer the following prompt: "
+const promptAugment2 = "\nuse the following knowledge:\n"
+
+var emptyVD = core.VectorDocument{}
 
 type BedrockHelper struct {
-	client           *bedrockruntime.Client
-	timeout          time.Duration
-	embeddingModelID string
+	client            *bedrockruntime.Client
+	timeout           time.Duration
+	embeddingModelID  string
+	foundationModelID string
 }
 
 type Embeddings struct {
 	Embedding []float64 `json:"embedding"`
 }
 
-var emptyVD = core.VectorDocument{}
+// Define a custom type for parsing the output
+type ModelResponse struct {
+	Type       string `json:"type"`
+	Completion string `json:"completion"`
+	StopReason string `json:"stop_reason"`
+	Stop       string `json:"stop"`
+}
 
-func InitializeBedrockHelper(ctx context.Context, embeddingModelID string, timeout time.Duration) (*BedrockHelper, error) {
+func InitializeBedrockHelper(ctx context.Context, embeddingModelID, foundationModelID string, timeout time.Duration) (*BedrockHelper, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -44,7 +56,64 @@ func InitializeBedrockHelper(ctx context.Context, embeddingModelID string, timeo
 	}
 	client := bedrockruntime.NewFromConfig(customCfg)
 
-	return &BedrockHelper{client: client, timeout: timeout, embeddingModelID: embeddingModelID}, nil
+	return &BedrockHelper{
+		client:            client,
+		timeout:           timeout,
+		embeddingModelID:  embeddingModelID,
+		foundationModelID: foundationModelID,
+	}, nil
+}
+
+func (bedrockHelper *BedrockHelper) AskWithChunks(ctx context.Context, prompt string, chunks []core.Chunk) (string, error) {
+	// build augmented prompt
+	var augmentedPrompt strings.Builder
+	augmentedPrompt.WriteString("\n\nHuman: ")
+	augmentedPrompt.WriteString(prompt)
+	augmentedPrompt.WriteString("\n\nAssistant:\n")
+	for _, chunk := range chunks {
+		augmentedPrompt.WriteString(chunk.Body)
+		augmentedPrompt.WriteString("\n")
+	}
+
+	// build input body
+	body, err := json.Marshal(map[string]interface{}{
+		"prompt":               augmentedPrompt.String(),
+		"max_tokens_to_sample": 300,
+		"temperature":          0.5,
+		"top_k":                250,
+		"top_p":                1,
+		"stop_sequences":       []string{"\n\nHuman:"},
+		"anthropic_version":    "bedrock-2023-05-31",
+	})
+	if err != nil {
+		return "", fmt.Errorf("error on json.Marshal: %v", err)
+	}
+
+	// create InvokeModelInput
+	input := &bedrockruntime.InvokeModelInput{
+		ModelId:     aws.String("anthropic.claude-v2"),
+		Body:        body,
+		ContentType: aws.String("application/json"),
+		Accept:      aws.String("*/*"),
+	}
+
+	// set context and invoke model
+	ctx, cancel := context.WithTimeout(ctx, bedrockHelper.timeout)
+	defer cancel()
+
+	output, err := bedrockHelper.client.InvokeModel(ctx, input)
+	if err != nil {
+		return "", fmt.Errorf("error invoking model: %v", err)
+	}
+
+	// Parse the response
+	var response ModelResponse
+	if err := json.Unmarshal(output.Body, &response); err != nil {
+		return "", fmt.Errorf("error parsing model response: %v", err)
+	}
+
+	return response.Completion, nil
+
 }
 
 func (bedrockHelper *BedrockHelper) VectorizeChunk(ctx context.Context, chunk core.Chunk) (core.VectorDocument, error) {

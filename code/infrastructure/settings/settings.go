@@ -13,6 +13,8 @@ import (
 
 const relativeSettingsFilePath = "../../../settings.env"
 const defaultContextTimeout = 59 * time.Second
+const defaultEmbeddingModelID = "amazon.titan-embed-text-v2:0"
+const defaultFoundationModelID = "anthropic.claude-v2"
 
 type Settings struct {
 	ContextTimeout time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
@@ -34,7 +36,8 @@ type Settings struct {
 	SubnetIds                []string `mapstructure:"PRIVATE_ISOLATED_SUBNET_IDS"`
 	SecurityGroupIds         []string `mapstructure:"SECURITY_GROUP_IDS"`
 	// bedrock
-	EmbeddingModelID string `mapstructure:"EMBEDDING_MODEL_ID"`
+	EmbeddingModelID  string `mapstructure:"EMBEDDING_MODEL_ID"`
+	FoundationModelID string `mapstructure:"FOUNDATION_MODEL_ID"`
 	// opensearch
 	OpensearchUsername        string `mapstructure:"OPENSEARCH_USERNAME"`
 	OpensearchPassword        string `mapstructure:"OPENSEARCH_PASSWORD"`
@@ -59,7 +62,6 @@ OPENSEARCH_PASSWORD=
 OPENSEARCH_DOMAIN=
 OPENSEARCH_INDEX_NAME=
 `
-const defaultEmbeddingModelID = "amazon.titan-embed-text-v2:0"
 
 func GetSettings() (*Settings, error) {
 	viper.SetConfigType("env")
@@ -69,6 +71,7 @@ func GetSettings() (*Settings, error) {
 	viper.SetDefault("TRIGGER_CRAWLER_TASK_DFN_ARN", "")
 	viper.SetDefault("TRIGGER_CRAWLER_CLUSTER_ARN", "")
 	viper.SetDefault("EMBEDDING_MODEL_ID", defaultEmbeddingModelID)
+	viper.SetDefault("FOUNDATION_MODEL_ID", defaultFoundationModelID)
 	viper.SetDefault("DO_ALLOW_OPENSEARCH_INSECURE", false)
 
 	// load settings

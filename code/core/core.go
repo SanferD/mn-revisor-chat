@@ -107,7 +107,7 @@ type Invoker interface {
 }
 
 type Agent interface {
-	Ask(context.Context, string, string) (string, error)
+	AskWithChunks(context.Context, string, []Chunk) (string, error)
 }
 
 type Vectorizer interface {

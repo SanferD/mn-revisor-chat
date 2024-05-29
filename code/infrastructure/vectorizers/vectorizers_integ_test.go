@@ -34,7 +34,7 @@ func TestVectorizers(t *testing.T) {
 	assert := assert.New(t)
 	mySettings, err := settings.GetSettings()
 	assert.NoError(err, "error on get settings: %v", err)
-	bedrockHelper, err := InitializeBedrockHelper(ctx, mySettings.EmbeddingModelID, mySettings.ContextTimeout)
+	bedrockHelper, err := InitializeBedrockHelper(ctx, mySettings.EmbeddingModelID, mySettings.FoundationModelID, mySettings.ContextTimeout)
 	assert.NoError(err, "error on initialize bedrock helper: %v", err)
 
 	t.Run("test vectorize chunk", func(t *testing.T) {
@@ -49,5 +49,11 @@ func TestVectorizers(t *testing.T) {
 		vd, err := bedrockHelper.Vectorize(ctx, vectorizeTest.body)
 		assert.NoError(err, "error on vectorize: %v", err)
 		assert.Equal(vd, vectorizeTest.vectorDocument, "vector documents are not equal")
+	})
+
+	t.Run("test AskWithChunks", func(t *testing.T) {
+		chunks := []core.Chunk{core.Chunk11, core.Chunk12, core.Chunk21}
+		_, err := bedrockHelper.AskWithChunks(ctx, "here is the prompt", chunks)
+		assert.NoError(err, "found error on ask with chunks: %v", err)
 	})
 }
