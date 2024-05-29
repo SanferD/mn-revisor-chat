@@ -2,6 +2,7 @@ package indexers
 
 import (
 	"code/core"
+	"code/infrastructure/loggers"
 	"code/infrastructure/settings"
 	"context"
 	"testing"
@@ -23,7 +24,8 @@ func TestIndexers(t *testing.T) {
 	ctx := context.Background()
 	mySettings, err := settings.GetSettings()
 	assert.NoError(err, "error on get settings: %v", err)
-	osiHelper, err := InitializeOpenSearchIndexerHelper(ctx, mySettings.OpensearchUsername, mySettings.OpensearchPassword, mySettings.OpensearchDomain, mySettings.DoAllowOpensearchInsecure, mySettings.OpensearchIndexName, mySettings.ContextTimeout)
+	logger, _ := loggers.InitializeMultiLogger(true)
+	osiHelper, err := InitializeOpenSearchIndexerHelper(ctx, mySettings.OpensearchUsername, mySettings.OpensearchPassword, mySettings.OpensearchDomain, mySettings.DoAllowOpensearchInsecure, mySettings.OpensearchIndexName, mySettings.ContextTimeout, logger)
 	assert.NoError(err, "error on creating opensearch indexer helper: %v", err)
 
 	t.Run("test can add document", func(t *testing.T) {
