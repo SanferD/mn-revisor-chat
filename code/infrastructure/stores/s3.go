@@ -42,13 +42,13 @@ func InitializeS3Helper(ctx context.Context, bucketName, rawPathPrefix, chunkPat
 	return &S3Helper{client: client, bucketName: bucketName, rawPathPrefix: rawPathPrefix, chunkPathPrefix: chunkPathPrefix, timeout: timeout}, nil
 }
 
-func (s3Helper *S3Helper) GetChunk(ctx context.Context, chunkFileName string) (core.Chunk, error) {
-	key := s3Helper.getChunkObjectKey(chunkFileName)
+func (s3Helper *S3Helper) GetChunk(ctx context.Context, chunkID string) (core.Chunk, error) {
+	key := s3Helper.getChunkObjectKey(chunkID)
 	body, err := s3Helper.getObject(ctx, key)
 	if err != nil {
 		return emptyChunk, fmt.Errorf("error on s3 get object: %v", err)
 	}
-	chunk := core.Chunk{ID: chunkFileName, Body: body}
+	chunk := core.Chunk{ID: chunkID, Body: body}
 	return chunk, nil
 }
 
