@@ -14,8 +14,9 @@ export class IndexerStack extends cdk.Stack {
 
     const fn = new ConfiguredFunction(this, constants.INDEXER_CMD, {
       environment: helpers.getEnvironment(props),
-      timeout: constants.INDEXER_TIMEOUT_DURATION,
+      role: props.indexerRole,
       securityGroup: props.securityGroup,
+      timeout: constants.INDEXER_TIMEOUT_DURATION,
       vpc: props.vpc,
       vpcSubnets: props.privateIsolatedSubnets,
     });

@@ -1,12 +1,13 @@
-import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as targets from "aws-cdk-lib/aws-events-targets";
-import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
 import { Construct } from "constructs";
 import { DualQueue } from "../constructs/dual-sqs";
 import { S3Rule } from "../constructs/s3-rule";
+import { LambdaRole } from "../constructs/lambda-role";
 import { ConfiguredOpensearchDomain } from "../constructs/configured-opensearch-domain";
 import * as constants from "../constants";
 
@@ -18,6 +19,7 @@ const RAW_EVENTS_DQ_ID = "raw-events-dq";
 const TABLE1_ID = "table-1";
 const URL_DQ_ID = "url-dq";
 const TO_INDEX_DQ_ID = "chunk-dq";
+const INDEXER_ROLE_ID = "indexer-role";
 
 export interface StatefulStackProps extends cdk.StackProps {
   azCount: number;
@@ -33,6 +35,7 @@ export class StatefulStack extends cdk.Stack {
   readonly rawEventsDQ: DualQueue;
   readonly toIndexDQ: DualQueue;
   readonly opensearchDomain: ConfiguredOpensearchDomain;
+  readonly indexerRole: LambdaRole;
 
   constructor(scope: Construct, id: string, props: StatefulStackProps) {
     super(scope, id, props);
@@ -66,6 +69,10 @@ export class StatefulStack extends cdk.Stack {
       vpc: props.vpc,
       vpcSubnets: [props.privateIsolatedSubnets],
     });
+
+    /* iam roles */
+    this.indexerRole = new LambdaRole(this, INDEXER_ROLE_ID);
+    this.opensearchDomain.grantAccess(this.indexerRole);
 
     /* queues for data transformation along with triggers */
     this.urlDQ = new DualQueue(this, URL_DQ_ID, {});

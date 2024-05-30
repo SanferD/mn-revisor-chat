@@ -18,6 +18,7 @@ function main(app: cdk.App, config: conf.Config) {
   });
 
   const commonProps: stacks.CommonStackProps = {
+    indexerRole: statefulStack.indexerRole,
     mainBucket: statefulStack.mainBucket,
     table1: statefulStack.table1,
     rawEventsDQ: statefulStack.rawEventsDQ,

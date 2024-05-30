@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as opensearchservice from "aws-cdk-lib/aws-opensearchservice";
 import { Construct } from "constructs";
@@ -28,5 +29,16 @@ export class ConfiguredOpensearchDomain extends opensearchservice.Domain {
       version: opensearchservice.EngineVersion.OPENSEARCH_2_11,
       ...props,
     });
+  }
+
+  grantAccess(grantable: iam.IGrantable): void {
+    this.addAccessPolicies(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        principals: [grantable.grantPrincipal],
+        actions: ["es:*"],
+        resources: [this.domainArn],
+      })
+    );
   }
 }
