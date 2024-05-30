@@ -26,6 +26,6 @@ export class IndexerStack extends cdk.Stack {
     props.mainBucket.grantRead(fn);
     props.opensearchDomain.grantIndexWrite(constants.VECTOR_INDEX_NAME, fn);
     fn.addToRolePolicy(helpers.getListPolicy({ queues: true }));
-    fn.addToRolePolicy(helpers.getBedrockInvokePolicy("amazon.titan-embed-text-v2:0"));
+    fn.addToRolePolicy(helpers.getBedrockInvokePolicy(constants.TITAN_EMBEDDING_V2_MODEL_ID));
   }
 }

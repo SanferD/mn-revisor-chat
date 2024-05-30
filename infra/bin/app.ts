@@ -20,14 +20,14 @@ function main(app: cdk.App, config: conf.Config) {
   const commonProps: stacks.CommonStackProps = {
     indexerRole: statefulStack.indexerRole,
     mainBucket: statefulStack.mainBucket,
-    table1: statefulStack.table1,
-    rawEventsDQ: statefulStack.rawEventsDQ,
-    urlDQ: statefulStack.urlDQ,
-    toIndexDQ: statefulStack.toIndexDQ,
     opensearchDomain: statefulStack.opensearchDomain,
-    securityGroup: vpcStack.securityGroup,
     privateIsolatedSubnets: vpcStack.privateIsolatedSubnets,
     privateWithEgressSubnets: vpcStack.privateWithEgressSubnets,
+    rawEventsDQ: statefulStack.rawEventsDQ,
+    securityGroup: vpcStack.securityGroup,
+    table1: statefulStack.table1,
+    toIndexDQ: statefulStack.toIndexDQ,
+    urlDQ: statefulStack.urlDQ,
     vpc: vpcStack.vpc,
   };
 
