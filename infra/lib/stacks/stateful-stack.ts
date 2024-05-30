@@ -7,6 +7,7 @@ import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
 import { Construct } from "constructs";
 import { DualQueue } from "../constructs/dual-sqs";
 import { S3Rule } from "../constructs/s3-rule";
+import { ConfiguredOpensearchDomain } from "../constructs/configured-opensearch-domain";
 import * as constants from "../constants";
 
 const MAIN_BUCKET_ID = "main-bucket";
@@ -31,7 +32,7 @@ export class StatefulStack extends cdk.Stack {
   readonly urlDQ: DualQueue;
   readonly rawEventsDQ: DualQueue;
   readonly toIndexDQ: DualQueue;
-  readonly opensearchDomain: opensearch.Domain;
+  readonly opensearchDomain: ConfiguredOpensearchDomain;
 
   constructor(scope: Construct, id: string, props: StatefulStackProps) {
     super(scope, id, props);
@@ -59,20 +60,9 @@ export class StatefulStack extends cdk.Stack {
 
     /* opensearch */
     const isMultiAz = props.azCount > 1;
-    this.opensearchDomain = new opensearch.Domain(this, OPENSEARCH_DOMAIN_ID, {
-      capacity: {
-        dataNodeInstanceType: "r5.large.search",
-        dataNodes: 1,
-        multiAzWithStandbyEnabled: isMultiAz,
-      },
-      enableAutoSoftwareUpdate: true,
-      enableVersionUpgrade: true,
-      encryptionAtRest: { enabled: true },
-      enforceHttps: true,
-      nodeToNodeEncryption: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    this.opensearchDomain = new ConfiguredOpensearchDomain(this, OPENSEARCH_DOMAIN_ID, {
+      multiAzWithStandbyEnabled: isMultiAz,
       securityGroups: [props.securityGroup],
-      version: opensearch.EngineVersion.OPENSEARCH_2_11,
       vpc: props.vpc,
       vpcSubnets: [props.privateIsolatedSubnets],
     });
