@@ -8,7 +8,6 @@ import * as constants from "../constants";
 import * as helpers from "../helpers";
 import { CommonStackProps } from "./common-stack-props";
 
-const CRAWLER_CMD = "crawler";
 const CRAWLER_SERVICE_ID = "crawler-service";
 const CRAWLER_CLUSTER_ID = "crawler-cluster";
 const CRAWLER_TASK_DEFINITION_ID = "crawler-task-definition";
@@ -32,7 +31,7 @@ export class CrawlerStack extends cdk.Stack {
     props.mainBucket.grantPut(crawlerTaskDefinition.taskRole, constants.RAW_OBJECT_PREFIX_PATH_WILDCARD);
     crawlerTaskDefinition.addToTaskRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
-    new CodeContainerDefinition(this, CRAWLER_CMD, {
+    new CodeContainerDefinition(this, constants.CRAWLER_CMD, {
       taskDefinition: crawlerTaskDefinition,
       environment: helpers.getEnvironment(props),
     });

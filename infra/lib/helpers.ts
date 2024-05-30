@@ -10,7 +10,6 @@ import { DualQueue } from "./constructs/dual-sqs";
 import { aws_opensearchservice as opensearchservice } from "aws-cdk-lib";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
-const validCmds = ["crawler", "trigger_crawler", "raw_scraper", "invoke_trigger_crawler", "indexer"];
 
 export function doMakeClean() {
   doMake("clean");
@@ -30,7 +29,7 @@ function doMake(target: string, cmd?: string) {
   }
   const rootDir = getRepositoryDirectory();
   const codeDir = path.join(rootDir, "code");
-  if (cmd !== null && !validCmds.includes(cmd!)) {
+  if (cmd !== null && !constants.VALID_CMDS.includes(cmd!)) {
     throw new Error(`cmd '${cmd} is not a valid command`);
   }
   const cmdArg = cmd === null ? "" : ` cmd=${cmd}`;

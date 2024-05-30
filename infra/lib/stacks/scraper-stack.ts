@@ -6,8 +6,6 @@ import * as constants from "../constants";
 import * as helpers from "../helpers";
 import { CommonStackProps } from "./common-stack-props";
 
-const RAW_SCRAPER_ID = "raw_scraper";
-
 export interface ScraperStackProps extends CommonStackProps {}
 
 export class ScraperStack extends cdk.Stack {
@@ -15,7 +13,7 @@ export class ScraperStack extends cdk.Stack {
     super(scope, id, props);
 
     // trigger scraper lambda on rawEventsDQ messages
-    const scraperFunction = new ConfiguredFunction(this, RAW_SCRAPER_ID, {
+    const scraperFunction = new ConfiguredFunction(this, constants.RAW_SCRAPER_CMD, {
       environment: helpers.getEnvironment(props),
       timeout: constants.SCRAPER_TIMEOUT_DURATION,
       securityGroup: props.securityGroup,

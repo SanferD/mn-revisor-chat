@@ -6,15 +6,13 @@ import { ConfiguredFunction } from "../constructs/configured-lambda";
 import * as constants from "../constants";
 import * as helpers from "../helpers";
 
-const INDEXER_CMD = "indexer";
-
 export interface IndexerStackProps extends CommonStackProps {}
 
 export class IndexerStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: IndexerStackProps) {
     super(scope, id, props);
 
-    const fn = new ConfiguredFunction(this, INDEXER_CMD, {
+    const fn = new ConfiguredFunction(this, constants.INDEXER_CMD, {
       environment: helpers.getEnvironment(props),
       timeout: constants.INDEXER_TIMEOUT_DURATION,
       securityGroup: props.securityGroup,

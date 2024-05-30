@@ -6,11 +6,10 @@ import { CodeContainerDefinition } from "../constructs/code-container-definition
 import { ConfiguredCluster } from "../constructs/configured-cluster";
 import { ConfiguredTaskDefinition } from "../constructs/configured-task-definition";
 import * as helpers from "../helpers";
+import * as constants from "../constants";
 
-const INVOKE_TRIGGER_CRAWLER_CMD = "invoke_trigger_crawler";
 const TRIGGER_CRAWLER_CLUSTER_ID = "trigger-crawler-cluster";
 const TRIGGER_CRAWLER_TASK_DEFINITION_ID = "trigger-crawler-task-definition";
-const TRIGGER_CRAWLER_CMD = "trigger_crawler";
 
 export interface TriggerCrawlerStackProps extends CommonStackProps {}
 
@@ -30,12 +29,12 @@ export class TriggerCrawlerStack extends cdk.Stack {
     props.table1.grantReadWriteData(triggerCrawlerTaskDefinition.taskRole);
     triggerCrawlerTaskDefinition.addToTaskRolePolicy(helpers.getListPolicy({ queues: true, tables: true }));
 
-    new CodeContainerDefinition(this, TRIGGER_CRAWLER_CMD, {
+    new CodeContainerDefinition(this, constants.TRIGGER_CRAWLER_CMD, {
       taskDefinition: triggerCrawlerTaskDefinition,
       environment: helpers.getEnvironment(props),
     });
 
-    const fn = new ConfiguredFunction(this, INVOKE_TRIGGER_CRAWLER_CMD, {
+    const fn = new ConfiguredFunction(this, constants.INVOKE_TRIGGER_CRAWLER_CMD, {
       environment: helpers.getEnvironment({
         ...props,
         triggerCrawlerCluster,

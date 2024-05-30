@@ -12,6 +12,13 @@ export const RAW_OBJECT_PREFIX_PATH_WILDCARD = "raw/*";
 export const SCRAPER_TIMEOUT_DURATION = cdk.Duration.minutes(3);
 export const INDEXER_TIMEOUT_DURATION = cdk.Duration.minutes(5);
 
+export const CRAWLER_CMD = "crawler";
+export const TRIGGER_CRAWLER_CMD = "trigger_crawler";
+export const RAW_SCRAPER_CMD = "raw_scraper";
+export const INVOKE_TRIGGER_CRAWLER_CMD = "invoke_trigger_crawler";
+export const INDEXER_CMD = "indexer";
+export const VALID_CMDS = [CRAWLER_CMD, TRIGGER_CRAWLER_CMD, RAW_SCRAPER_CMD, INVOKE_TRIGGER_CRAWLER_CMD, INDEXER_CMD];
+
 export const RAW_PATH_PREFIX_ENV_NAME = "RAW_PATH_PREFIX";
 export const CHUNK_PATH_PREFIX_ENV_NAME = "CHUNK_PATH_PREFIX";
 export const MAIN_BUCKET_NAME_ENV_NAME = "MAIN_BUCKET_NAME";
