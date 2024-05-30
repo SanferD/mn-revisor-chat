@@ -19,7 +19,7 @@ import (
 	requestsigner "github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
 )
 
-const findMatchesK = 100
+const findMatchesK = 10
 const indexSettingsForKNNEmbeddings = `{
 	"settings": {
 		"index": {
