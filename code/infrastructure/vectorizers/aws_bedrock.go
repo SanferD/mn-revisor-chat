@@ -15,8 +15,7 @@ import (
 )
 
 const defaultClientTimeout = 20 * time.Second
-const promptAugment1 = "answer the following prompt: "
-const promptAugment2 = "\nuse the following knowledge:\n"
+const systemPrompt = "You are an expert on Minnesota statutes. Answer the Human's question with references to the statues. Should reference the statue using standard notation (ex: § 337.10, subd. 1). At the end of the message, provide the entire relevant subdivision. Here are some applicable statute subdivisions. Note, these are labelled chapter.section.subdivision:\n"
 
 var emptyVD = core.VectorDocument{}
 
@@ -67,17 +66,20 @@ func InitializeBedrockHelper(ctx context.Context, embeddingModelID, foundationMo
 func (bedrockHelper *BedrockHelper) AskWithChunks(ctx context.Context, prompt string, chunks []core.Chunk) (string, error) {
 	// build augmented prompt
 	var augmentedPrompt strings.Builder
-	augmentedPrompt.WriteString("\n\nHuman: ")
-	augmentedPrompt.WriteString(prompt)
-	augmentedPrompt.WriteString("\n\nAssistant:\n")
+	augmentedPrompt.WriteString("\n\nSystem: ")
+	augmentedPrompt.WriteString(systemPrompt)
 	for _, chunk := range chunks {
 		augmentedPrompt.WriteString(chunk.Body)
 		augmentedPrompt.WriteString("\n")
 	}
+	augmentedPrompt.WriteString("\n\nHuman: ")
+	augmentedPrompt.WriteString(prompt)
+	augmentedPrompt.WriteString("\n\nAssistant:\n")
+	thePrompt := augmentedPrompt.String()
 
 	// build input body
 	body, err := json.Marshal(map[string]interface{}{
-		"prompt":               augmentedPrompt.String(),
+		"prompt":               thePrompt,
 		"max_tokens_to_sample": 300,
 		"temperature":          0.5,
 		"top_k":                250,
