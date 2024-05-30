@@ -94,19 +94,21 @@ func InitializeOpenSearchIndexerHelper(ctx context.Context, username, password, 
 	}
 
 	osiHelper := &OpenSearchIndexerHelper{client: client, indexName: indexName, timeout: timeout, logger: logger}
-	if err := osiHelper.createIndex(ctx); err != nil {
-		return nil, fmt.Errorf("error on creating index: %v", err)
-	}
 	return osiHelper, nil
 }
 
+func (osiHelper *OpenSearchIndexerHelper) SetupIndexIfNecessary(ctx context.Context) error {
+	if err := osiHelper.createIndex(ctx); err != nil {
+		return fmt.Errorf("error on creating index: %v", err)
+	}
+	return nil
+}
+
 func (osiHelper *OpenSearchIndexerHelper) createIndex(ctx context.Context) error {
-	logger := osiHelper.logger
 	ctx, cancel := context.WithTimeout(ctx, osiHelper.timeout)
 	defer cancel()
 
 	// Create the index if it does not exist
-	logger.Debug("creating index...")
 	settings := strings.NewReader(indexSettingsForKNNEmbeddings)
 	req := opensearchapi.IndicesCreateRequest{
 		Index: osiHelper.indexName,
@@ -126,7 +128,6 @@ func (osiHelper *OpenSearchIndexerHelper) createIndex(ctx context.Context) error
 			return fmt.Errorf("failed to unmarshal string: %v", err)
 		}
 		if values.Error.RootCause[0].Type == "resource_already_exists_exception" {
-			logger.Debug("index already exists...")
 			return nil
 		}
 		return fmt.Errorf("failed to create index: response=%s", createResp.String())

@@ -55,7 +55,7 @@ func init() {
 	}
 
 	logger.Info("initializing bedrock helper")
-	if vectorizer, err = vectorizers.InitializeBedrockHelper(ctx, mySettings.EmbeddingModelID, mySettings.ContextTimeout); err != nil {
+	if vectorizer, err = vectorizers.InitializeBedrockHelper(ctx, mySettings.EmbeddingModelID, mySettings.FoundationModelID, mySettings.ContextTimeout); err != nil {
 		logger.Fatal("error initializing bedrock helper: %v", err)
 	}
 

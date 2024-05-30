@@ -7,6 +7,9 @@ import (
 )
 
 func Index(ctx context.Context, chunkID string, chunksDataStore core.ChunksDataStore, vectorizer core.Vectorizer, searchIndex core.SearchIndex, logger core.Logger) error {
+	logger.Info("initializing index")
+	searchIndex.SetupIndexIfNecessary(ctx)
+
 	logger.Info("getting chunk with chunkID=%s", chunkID)
 	chunk, err := chunksDataStore.GetChunk(ctx, chunkID)
 	if err != nil {

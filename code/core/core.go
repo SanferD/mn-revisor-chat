@@ -116,6 +116,7 @@ type Vectorizer interface {
 }
 
 type SearchIndex interface {
+	SetupIndexIfNecessary(context.Context) error
 	AddVectorDocument(context.Context, VectorDocument) error
 	FindMatchingChunkIDs(context.Context, VectorDocument) ([]string, error)
 }
