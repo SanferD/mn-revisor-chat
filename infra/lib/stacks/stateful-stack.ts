@@ -20,6 +20,7 @@ const TABLE1_ID = "table-1";
 const URL_DQ_ID = "url-dq";
 const TO_INDEX_DQ_ID = "chunk-dq";
 const INDEXER_ROLE_ID = "indexer-role";
+const ANSWERER_ROLE_ID = "answerer-role";
 
 export interface StatefulStackProps extends cdk.StackProps {
   azCount: number;
@@ -36,6 +37,7 @@ export class StatefulStack extends cdk.Stack {
   readonly toIndexDQ: DualQueue;
   readonly opensearchDomain: ConfiguredOpensearchDomain;
   readonly indexerRole: LambdaRole;
+  readonly answererRole: LambdaRole;
 
   constructor(scope: Construct, id: string, props: StatefulStackProps) {
     super(scope, id, props);
@@ -72,7 +74,9 @@ export class StatefulStack extends cdk.Stack {
 
     /* iam roles */
     this.indexerRole = new LambdaRole(this, INDEXER_ROLE_ID);
+    this.answererRole = new LambdaRole(this, ANSWERER_ROLE_ID);
     this.opensearchDomain.grantAccess(this.indexerRole);
+    this.opensearchDomain.grantAccess(this.answererRole);
 
     /* queues for data transformation along with triggers */
     this.urlDQ = new DualQueue(this, URL_DQ_ID, {});

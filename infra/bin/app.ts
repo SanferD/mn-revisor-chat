@@ -18,6 +18,7 @@ function main(app: cdk.App, config: conf.Config) {
   });
 
   const commonProps: stacks.CommonStackProps = {
+    answererRole: statefulStack.answererRole,
     indexerRole: statefulStack.indexerRole,
     mainBucket: statefulStack.mainBucket,
     opensearchDomain: statefulStack.opensearchDomain,
@@ -44,6 +45,10 @@ function main(app: cdk.App, config: conf.Config) {
   });
 
   new stacks.IndexerStack(app, i("indexer-stack"), {
+    ...commonProps,
+  });
+
+  new stacks.AnswererStack(app, i("answerer-stack"), {
     ...commonProps,
   });
 }

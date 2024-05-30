@@ -18,6 +18,7 @@ export interface CommonStackProps extends cdk.StackProps {
   // opensearch
   opensearchDomain: ConfiguredOpensearchDomain;
   // role
+  answererRole: LambdaRole;
   indexerRole: LambdaRole;
   // vpc
   privateIsolatedSubnets: ec2.SubnetSelection;
