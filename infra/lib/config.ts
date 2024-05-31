@@ -3,10 +3,11 @@ import * as path from "path";
 import * as fs from "fs";
 import * as constants from "./constants";
 import * as helpers from "./helpers";
+import { SinchConfigProps } from "./constructs/sinch-config-props";
 
 const CONFIG_FILE_NAME = "config.yaml";
 
-export interface Config {
+export interface Config extends SinchConfigProps {
   azCount: number;
   nonce: string;
 }
@@ -21,10 +22,13 @@ export function parseConfig(): Config {
   return {
     azCount: Number(config.azCount),
     nonce: String(config.nonce),
+    sinchApiToken: String(config.sinchApiToken),
+    sinchProjectId: String(config.sinchProjectId),
+    sinchVirtualPhoneNumber: String(config.sinchVirtualPhoneNumber),
   };
 }
 function validateConfig(config: any) {
-  const fields = ["azCount", "nonce"];
+  const fields = ["azCount", "nonce", "sinchApiToken", "sinchProjectId", "sinchVirtualPhoneNumber"];
   const missingFields = [];
   for (var i = 0; i < fields.length; i++) {
     const field = fields[i];
