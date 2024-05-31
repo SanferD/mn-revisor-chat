@@ -44,6 +44,10 @@ type Settings struct {
 	OpensearchDomain          string `mapstructure:"OPENSEARCH_DOMAIN"`
 	DoAllowOpensearchInsecure bool   `mapstructure:"DO_ALLOW_OPENSEARCH_INSECURE"`
 	OpensearchIndexName       string `mapstructure:"OPENSEARCH_INDEX_NAME"`
+	// sinch
+	SinchAPIToken           string `mapstructure:"SINCH_API_TOKEN"`
+	SinchProjectID          string `mapstructure:"SINCH_PROJECT_ID"`
+	SinchVirtualPhoneNumber string `mapstructure:"SINCH_VIRTUAL_PHONE_NUMBER"`
 }
 
 const emptySettings = `
@@ -73,6 +77,9 @@ func GetSettings() (*Settings, error) {
 	viper.SetDefault("EMBEDDING_MODEL_ID", defaultEmbeddingModelID)
 	viper.SetDefault("FOUNDATION_MODEL_ID", defaultFoundationModelID)
 	viper.SetDefault("DO_ALLOW_OPENSEARCH_INSECURE", false)
+	viper.SetDefault("SINCH_API_TOKEN", "")
+	viper.SetDefault("SINCH_PROJECT_ID", "")
+	viper.SetDefault("SINCH_VIRTUAL_PHONE_NUMBER", "")
 
 	// load settings
 

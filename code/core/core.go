@@ -110,6 +110,10 @@ type Agent interface {
 	AskWithChunks(context.Context, string, []Chunk) (string, error)
 }
 
+type Comms interface {
+	SendMessage(context.Context, string, string) error
+}
+
 type Vectorizer interface {
 	Vectorize(context.Context, string) (VectorDocument, error)
 	VectorizeChunk(context.Context, Chunk) (VectorDocument, error)
