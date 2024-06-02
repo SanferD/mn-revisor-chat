@@ -28,6 +28,11 @@ var (
 	comm       core.Comms
 )
 
+var internalErrorResponse = events.APIGatewayProxyResponse{
+	StatusCode: 500,
+	Body:       "internal error",
+}
+
 func init() {
 	ctx := context.Background()
 
@@ -74,20 +79,25 @@ func init() {
 
 }
 
-func HandleRequest(ctx context.Context, payload events.APIGatewayProxyRequest) error {
+func HandleRequest(ctx context.Context, payload events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var err error
 	logger.Info("processing payload %+v", payload)
 	var whp types.SinchWebhookPayload
 	if err := json.Unmarshal([]byte(payload.Body), &whp); err != nil {
-		return fmt.Errorf("error on unmarshalling json: %v", err)
+		err = fmt.Errorf("error on unmarshalling json: %v", err)
+		return internalErrorResponse, err
 	}
 	prompt := whp.Message.ContactMessage.TextMessage.Text
 	phoneNumber := whp.Message.ChannelIdentity.Identity
 	if err = application.Answer(ctx, prompt, phoneNumber, chunkStore, agent, indexer, vectorizer, comm, logger); err != nil {
-		return err
+		err = fmt.Errorf("error on getting answer from application: %v", err)
+		return internalErrorResponse, err
 	}
 	logger.Info("done processing payload %+v", payload)
-	return nil
+	return events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Body:       "success!",
+	}, nil
 }
 
 func main() {
