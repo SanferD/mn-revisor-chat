@@ -114,7 +114,7 @@ func (bedrockHelper *BedrockHelper) AskWithChunks(ctx context.Context, prompt st
 		return "", fmt.Errorf("error parsing model response: %v", err)
 	}
 
-	return response.Completion, nil
+	return strings.TrimLeft(response.Completion, " "), nil
 
 }
 
