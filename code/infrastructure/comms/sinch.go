@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -34,6 +35,10 @@ func InitializeSinchHelper(ctx context.Context, apiToken, projectID, sinchVirtua
 
 func (sh *SinchHelper) SendMessage(ctx context.Context, toPhoneNumber, messageContent string) error {
 	url := fmt.Sprintf(sinchAPIURL, sh.projectID)
+
+	if !strings.HasPrefix(toPhoneNumber, "+") {
+		toPhoneNumber = "+" + toPhoneNumber
+	}
 
 	payload := map[string]interface{}{
 		"from": sh.sinchVirtualPhoneNumber,
