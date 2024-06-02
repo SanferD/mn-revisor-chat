@@ -3,12 +3,16 @@ package main
 import (
 	"code/application"
 	"code/core"
+	"code/infrastructure/comms"
 	"code/infrastructure/indexers"
 	"code/infrastructure/loggers"
 	"code/infrastructure/settings"
 	"code/infrastructure/stores"
+	"code/infrastructure/types"
 	"code/infrastructure/vectorizers"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -21,6 +25,7 @@ var (
 	indexer    core.SearchIndex
 	logger     core.Logger
 	vectorizer core.Vectorizer
+	comm       core.Comms
 )
 
 func init() {
@@ -61,19 +66,27 @@ func init() {
 		logger.Fatal("error on initializing opensearch indexer helper: %v", err)
 	}
 
+	logger.Info("initializing comms helpers")
+	comm, err = comms.InitializeSinchHelper(ctx, mySettings.SinchAPIToken, mySettings.SinchProjectID, mySettings.SinchVirtualPhoneNumber, mySettings.ContextTimeout)
+	if err != nil {
+		logger.Fatal("error on initializing sinch helper: %v", err)
+	}
+
 }
 
-func HandleRequest(ctx context.Context, snsEvent events.SNSEvent) error {
+func HandleRequest(ctx context.Context, payload events.APIGatewayProxyRequest) error {
 	var err error
-	var prompt string
-	logger.Info("processing snsEvent", snsEvent)
-	for _, record := range snsEvent.Records {
-		prompt = record.SNS.Message
-		if err = application.Answer(ctx, prompt, chunkStore, agent, indexer, vectorizer, logger); err != nil {
-			return err
-		}
+	logger.Info("processing payload %+v", payload)
+	var whp types.SinchWebhookPayload
+	if err := json.Unmarshal([]byte(payload.Body), &whp); err != nil {
+		return fmt.Errorf("error on unmarshalling json: %v", err)
 	}
-	logger.Info("done processing snsEvent", snsEvent)
+	prompt := whp.Message.ContactMessage.TextMessage.Text
+	phoneNumber := whp.Message.ChannelIdentity.Identity
+	if err = application.Answer(ctx, prompt, phoneNumber, chunkStore, agent, indexer, vectorizer, comm, logger); err != nil {
+		return err
+	}
+	logger.Info("done processing payload %+v", payload)
 	return nil
 }
 

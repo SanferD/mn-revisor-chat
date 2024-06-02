@@ -6,7 +6,8 @@ import (
 	"fmt"
 )
 
-func Answer(ctx context.Context, prompt string, chunkStore core.ChunksDataStore, agent core.Agent, indexer core.SearchIndex, vectorizer core.Vectorizer, logger core.Logger) error {
+func Answer(ctx context.Context, prompt, phoneNumber string, chunkStore core.ChunksDataStore, agent core.Agent, indexer core.SearchIndex, vectorizer core.Vectorizer, comms core.Comms, logger core.Logger) error {
+
 	logger.Info("received prompt='%s'", prompt)
 
 	logger.Info("vectorize prompt")
@@ -42,8 +43,10 @@ func Answer(ctx context.Context, prompt string, chunkStore core.ChunksDataStore,
 		return fmt.Errorf("error asking agent prompt with chunks: %v", err)
 	}
 
-	// todo
-	logger.Info("todo: send answer to asker, answer='%s'", answer)
+	logger.Info("sending to phoneNumber=%s the answer=%s", phoneNumber, answer)
+	if err = comms.SendMessage(ctx, phoneNumber, answer); err != nil {
+		return fmt.Errorf("error on send message: %v", err)
+	}
 
 	logger.Info("answered prompt=%s", prompt)
 	return nil
