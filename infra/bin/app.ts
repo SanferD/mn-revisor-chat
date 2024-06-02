@@ -2,6 +2,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as conf from "../lib/config";
 import * as stacks from "../lib/stacks";
+import { SinchConfigProps } from "../lib/constructs/sinch-config-props";
 
 function main(app: cdk.App, config: conf.Config) {
   console.log("config: ", config);
@@ -32,6 +33,10 @@ function main(app: cdk.App, config: conf.Config) {
     vpc: vpcStack.vpc,
   };
 
+  const sinchConfigProps: SinchConfigProps = {
+    ...config,
+  };
+
   new stacks.TriggerCrawlerStack(app, i("trigger-crawler-stack"), {
     ...commonProps,
   });
@@ -50,6 +55,7 @@ function main(app: cdk.App, config: conf.Config) {
 
   new stacks.AnswererStack(app, i("answerer-stack"), {
     ...commonProps,
+    ...sinchConfigProps,
   });
 }
 

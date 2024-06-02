@@ -8,6 +8,8 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { execSync } from "child_process";
 import { DualQueue } from "./constructs/dual-sqs";
 import { aws_opensearchservice as opensearchservice } from "aws-cdk-lib";
+import { SinchConfigProps } from "./constructs/sinch-config-props";
+import { CloudFormationDeployStackInstancesAction } from "aws-cdk-lib/aws-codepipeline-actions";
 
 const validMakeTargets = ["clean", "build-ecs", "build-lambda"];
 
@@ -87,7 +89,7 @@ export function getRepositoryDirectory(): string {
   return path.resolve(directory, ".."); // Return the parent of the 'infra' directory
 }
 
-export interface getEnvironmentProps {
+export interface getEnvironmentProps extends Partial<SinchConfigProps> {
   // s3
   mainBucket?: s3.Bucket;
   // ddb
@@ -147,6 +149,15 @@ export function getEnvironment(props: getEnvironmentProps): { [key: string]: str
     environment[constants.OPENSEARCH_PASSWORD_ENV_NAME] = constants.ADMIN;
     environment[constants.OPENSEARCH_DOMAIN_ENV_NAME] = ep;
     environment[constants.OPENSEARCH_INDEX_NAME_ENV_NAME] = constants.VECTOR_INDEX_NAME;
+  }
+  if (props.sinchApiToken) {
+    environment[constants.SINCH_API_TOKEN_ENV_NAME] = props.sinchApiToken;
+  }
+  if (props.sinchProjectId) {
+    environment[constants.SINCH_PROJECT_ID_ENV_NAME] = props.sinchProjectId;
+  }
+  if (props.sinchVirtualPhoneNumber) {
+    environment[constants.SINCH_VIRTUAL_PHONE_NUMBER_ENV_NAME] = props.sinchVirtualPhoneNumber;
   }
   return environment;
 }
