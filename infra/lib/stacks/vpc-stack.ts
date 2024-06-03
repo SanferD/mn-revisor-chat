@@ -65,6 +65,11 @@ export class VpcStack extends cdk.Stack {
       allowAllOutbound: false,
     });
     this.securityGroup.addEgressRule(ec2.Peer.anyIpv4(), ec2.Port.HTTPS, "allow outbound traffic to HTTPS servers");
+    this.securityGroup.addIngressRule(
+      this.securityGroup,
+      ec2.Port.HTTPS,
+      "allow inbound HTTPS traffic originating from within security-group/vpc"
+    );
 
     // vpc endpoints
     //// vpc endpoint to DynamoDB
