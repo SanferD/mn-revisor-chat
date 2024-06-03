@@ -15,7 +15,7 @@ import (
 )
 
 const defaultClientTimeout = 20 * time.Second
-const systemPrompt = "You are an expert on Minnesota statutes. Answer the Human's question with references to the statues. Should reference the statue using standard notation (ex: § 337.10, subd. 1). At the end of the message, provide the entire relevant subdivision. Here are some applicable statute subdivisions. Note, these are labelled chapter.section.subdivision:\n"
+const systemPrompt = "You are an expert on Minnesota statutes. Answer the Human's question with references to the statutes. When a subdivision references another subdivision, include the text of the referenced subdivision as well. Reference the statute using standard notation (e.g., § 337.10, subd. 1). At the end of the message, provide the entire relevant subdivision. Here are some applicable statute subdivisions. Note, these are labeled chapter.section.subdivision:\n"
 
 var emptyVD = core.VectorDocument{}
 
