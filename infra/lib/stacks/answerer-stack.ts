@@ -42,7 +42,7 @@ export class AnswererStack extends cdk.Stack {
 
     // Output the API endpoint to the console
     new cdk.CfnOutput(this, "ApiEndpoint", {
-      value: httpApi.apiEndpoint,
+      value: httpApi.apiEndpoint + "/api/v1",
       description: "The API endpoint for the Sinch webhook",
     });
   }
