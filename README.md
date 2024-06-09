@@ -1,6 +1,10 @@
 # mn-revisor-chat
 
-A chat app for querying Minnesota law from the MN Revisor website.
+A chat app for querying Minnesota law from the MN Revisor's website.
+
+![demo](./static/demo.jpg)
+
+(Note: It's actually statute 86B.33, subdivision 1.)
 
 # Architecture
 
@@ -91,13 +95,13 @@ answerer-stack-mnrevisor.ApiEndpoint = https://abcd.execute-api.us-east-1.amazon
 1. Sign in to the AWS console.
 1. Navigate to the Lambda page and run the **invoke-trigger-crawler** Lambda with any event.
 1. Wait until all the SQS queues are empty (i.e., crawling has completed). This should take approximately 4 hours.
-1. Should also see many documents in the OpenSearch vector index (**AWS Console > OpenSearch > opensearch domain > Instance health > Cluter health > Overall health > Searchable documents**).
+1. Should also see many documents in the OpenSearch vector index (**AWS Console > OpenSearch > opensearch domain > Instance health > Cluster health > Overall health > Searchable documents**).
 
 ![searchable documents](./static/searchable-documents.png)
 
 ### Ask a Question
 
-Once the OpenSearch Vector Index is fully populated, it's ready to answer questions. Text a test prompt to the Sinch virtual number and receive a response after a minute or so. If you've configured a testing webhook site, you should see the inbout sms on the webhook site page.
+Once the OpenSearch Vector Index is fully populated, it's ready to answer questions. Text a test prompt to the Sinch virtual number and receive a response after a minute or so. If you've configured a testing webhook site, you should see the inbound sms on the webhook site page.
 
 # Code Structure
 
