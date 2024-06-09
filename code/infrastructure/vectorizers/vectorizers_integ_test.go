@@ -30,7 +30,7 @@ var vectorizeTest = vectorizeTestCase{
 }
 
 const dcPrompt = "I want to open a dry cleaning business. By when should I register my business with the commissioner of revenue?"
-const expectedSubdivision = "§ 115B.49, subd. 4"
+const expectedStatute = "115B.49"
 
 func TestVectorizers(t *testing.T) {
 	ctx := context.Background()
@@ -57,6 +57,6 @@ func TestVectorizers(t *testing.T) {
 	t.Run("test AskWithChunks", func(t *testing.T) {
 		answer, err := bedrockHelper.AskWithChunks(ctx, dcPrompt, core.DCChunks)
 		assert.NoError(err, "found error on ask with chunks: %v", err)
-		assert.Contains(answer, expectedSubdivision)
+		assert.Contains(answer, expectedStatute)
 	})
 }

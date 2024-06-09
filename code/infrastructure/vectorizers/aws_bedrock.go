@@ -15,7 +15,7 @@ import (
 )
 
 const defaultClientTimeout = 20 * time.Second
-const systemPrompt = "You are an expert on Minnesota statutes. Answer the Human's question with references to the statutes. When a subdivision references another subdivision, include the text of the referenced subdivision as well. Reference the statute using standard notation (e.g., § 337.10, subd. 1). At the end of the message, provide the entire relevant subdivision. Here are some applicable statute subdivisions. Note, these are labeled chapter.section.subdivision:\n"
+const systemPrompt = "You are an expert on Minnesota statutes. Answer the Human's question with references to the statutes. When a subdivision references another subdivision, include the text of the referenced subdivision as well. Reference the statute using standard notation (e.g., § 337.10, subd. 1). At the end of the message, provide the entire relevant subdivision. Be careful to accurately cite the statute without merging the subdivision number into the statute number. Note that some statutes do not have a subdivision and are labeled simply as chapter.section (e.g., § 86B.33). Verify each citation to ensure it is correct and clearly distinguishes between the statute number and the subdivision number.\n"
 
 var emptyVD = core.VectorDocument{}
 
