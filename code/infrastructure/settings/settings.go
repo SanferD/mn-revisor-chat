@@ -46,7 +46,7 @@ type Settings struct {
 	OpensearchIndexName       string `mapstructure:"OPENSEARCH_INDEX_NAME"`
 	// sinch
 	SinchAPIToken           string `mapstructure:"SINCH_API_TOKEN"`
-	SinchProjectID          string `mapstructure:"SINCH_PROJECT_ID"`
+	SinchServiceID          string `mapstructure:"SINCH_SERVICE_ID"`
 	SinchVirtualPhoneNumber string `mapstructure:"SINCH_VIRTUAL_PHONE_NUMBER"`
 }
 
@@ -78,7 +78,7 @@ func GetSettings() (*Settings, error) {
 	viper.SetDefault("FOUNDATION_MODEL_ID", defaultFoundationModelID)
 	viper.SetDefault("DO_ALLOW_OPENSEARCH_INSECURE", false)
 	viper.SetDefault("SINCH_API_TOKEN", "")
-	viper.SetDefault("SINCH_PROJECT_ID", "")
+	viper.SetDefault("SINCH_SERVICE_ID", "")
 	viper.SetDefault("SINCH_VIRTUAL_PHONE_NUMBER", "")
 
 	// load settings

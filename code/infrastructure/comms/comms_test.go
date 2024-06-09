@@ -20,7 +20,7 @@ func TestCommsTest(t *testing.T) {
 
 	mySettings, err := settings.GetSettings()
 	assert.NoError(err, "error on get settings: %v", err)
-	commsHelper, err := InitializeSinchHelper(ctx, mySettings.SinchAPIToken, mySettings.SinchProjectID, mySettings.SinchVirtualPhoneNumber, mySettings.ContextTimeout)
+	commsHelper, err := InitializeSinchHelper(ctx, mySettings.SinchAPIToken, mySettings.SinchServiceID, mySettings.SinchVirtualPhoneNumber, mySettings.ContextTimeout)
 	assert.NoError(err, "error on initializing sinch helper: %v", err)
 
 	t.Run("test send sms", func(t *testing.T) {

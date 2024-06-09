@@ -72,7 +72,7 @@ func init() {
 	}
 
 	logger.Info("initializing comms helpers")
-	comm, err = comms.InitializeSinchHelper(ctx, mySettings.SinchAPIToken, mySettings.SinchProjectID, mySettings.SinchVirtualPhoneNumber, mySettings.ContextTimeout)
+	comm, err = comms.InitializeSinchHelper(ctx, mySettings.SinchAPIToken, mySettings.SinchServiceID, mySettings.SinchVirtualPhoneNumber, mySettings.ContextTimeout)
 	if err != nil {
 		logger.Fatal("error on initializing sinch helper: %v", err)
 	}

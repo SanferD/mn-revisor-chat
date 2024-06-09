@@ -1,5 +1,5 @@
 export interface SinchConfigProps {
   sinchApiToken: string;
-  sinchProjectId: string;
+  sinchServiceId: string;
   sinchVirtualPhoneNumber: string;
 }

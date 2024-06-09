@@ -153,8 +153,8 @@ export function getEnvironment(props: getEnvironmentProps): { [key: string]: str
   if (props.sinchApiToken) {
     environment[constants.SINCH_API_TOKEN_ENV_NAME] = props.sinchApiToken;
   }
-  if (props.sinchProjectId) {
-    environment[constants.SINCH_PROJECT_ID_ENV_NAME] = props.sinchProjectId;
+  if (props.sinchServiceId) {
+    environment[constants.SINCH_SERVICE_ID_ENV_NAME] = props.sinchServiceId;
   }
   if (props.sinchVirtualPhoneNumber) {
     environment[constants.SINCH_VIRTUAL_PHONE_NUMBER_ENV_NAME] = props.sinchVirtualPhoneNumber;

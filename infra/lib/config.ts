@@ -23,12 +23,12 @@ export function parseConfig(): Config {
     azCount: Number(config.azCount),
     nonce: String(config.nonce),
     sinchApiToken: String(config.sinchApiToken),
-    sinchProjectId: String(config.sinchProjectId),
+    sinchServiceId: String(config.sinchServiceId),
     sinchVirtualPhoneNumber: String(config.sinchVirtualPhoneNumber),
   };
 }
 function validateConfig(config: any) {
-  const fields = ["azCount", "nonce", "sinchApiToken", "sinchProjectId", "sinchVirtualPhoneNumber"];
+  const fields = ["azCount", "nonce", "sinchApiToken", "sinchServiceId", "sinchVirtualPhoneNumber"];
   const missingFields = [];
   for (var i = 0; i < fields.length; i++) {
     const field = fields[i];
