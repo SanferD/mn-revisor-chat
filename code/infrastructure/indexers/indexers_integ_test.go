@@ -31,11 +31,17 @@ func TestIndexers(t *testing.T) {
 	osiHelper, err := InitializeOpenSearchIndexerHelper(ctx, mySettings.OpensearchUsername, mySettings.OpensearchPassword, mySettings.OpensearchDomain, mySettings.DoAllowOpensearchInsecure, mySettings.OpensearchIndexName, mySettings.ContextTimeout, logger)
 	assert.NoError(err, "error on creating opensearch indexer helper: %v", err)
 
+	t.Run("test can setup index", func(t *testing.T) {
+		err = osiHelper.SetupIndexIfNecessary(ctx)
+		assert.NoError(err, "error on setting up index if necessary: %v", err)
+		err = osiHelper.SetupIndexIfNecessary(ctx)
+		assert.NoError(err, "error on setting up index a second time if necessary: %v", err)
+	})
+
 	t.Run("test can AddVectorDocument", func(t *testing.T) {
 		for _, test := range tests {
 			err = osiHelper.AddVectorDocument(ctx, test.vectorDocument)
 			assert.NoError(err, "error on adding statute: %v", err)
-
 		}
 	})
 
