@@ -19,12 +19,15 @@ func Statute2SubdivisionChunks(statute core.Statute) []core.Chunk {
 	var chunks []core.Chunk = make([]core.Chunk, 0)
 	id := statute.Chapter + "." + statute.Section
 	for _, subdivision := range statute.Subdivisions {
+		var builder strings.Builder
 		var idSubdiv string = id
+		builder.WriteString("§ ")
+		builder.WriteString(id)
 		if len(subdivision.Number) > 0 {
 			idSubdiv = idSubdiv + "." + subdivision.Number
+			builder.WriteString(", subd. ")
+			builder.WriteString(subdivision.Number)
 		}
-		var builder strings.Builder
-		builder.WriteString(idSubdiv)
 		builder.WriteString(": ")
 		builder.WriteString(statute.Title)
 		if len(subdivision.Heading) > 0 {
