@@ -42,6 +42,15 @@ var isLocalhostURLTestCases = []struct {
 	{url: "https://example.com", expected: false},
 }
 
+var base64EncodeTestCases = []struct {
+	content  string
+	expected string
+}{
+	{content: "Hello, World!", expected: "SGVsbG8sIFdvcmxkIQ=="},
+	{content: "12345", expected: "MTIzNDU="},
+	{content: "Lorem ipsum dolor sit amet", expected: "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="},
+}
+
 func TestHelpers(t *testing.T) {
 	t.Run("statutes 2 subdivision chunks", func(t *testing.T) {
 		for _, test := range tests {
@@ -62,6 +71,13 @@ func TestHelpers(t *testing.T) {
 		for _, tc := range isLocalhostURLTestCases {
 			result := IsLocalhostURL(tc.url)
 			assert.Equal(t, tc.expected, result, "unexpected result for URL: "+tc.url)
+		}
+	})
+
+	t.Run("Base64Encode", func(t *testing.T) {
+		for _, tc := range base64EncodeTestCases {
+			result := Base64Encode(tc.content)
+			assert.Equal(t, tc.expected, result, "unexpected result for content: "+tc.content)
 		}
 	})
 }
