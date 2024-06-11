@@ -26,6 +26,21 @@ var chunkTests = []chunkTestCase{
 	{objectKey: "bucket/chunk/1.2.3.txt", chunkID: "1.2.3"},
 	{objectKey: "bucket/chunk/4.12a.txt", chunkID: "4.12a"},
 }
+var isLocalhostURLTestCases = []struct {
+	url      string
+	expected bool
+}{
+	{url: "http://localhost", expected: true},
+	{url: "https://localhost", expected: true},
+	{url: "http://127.0.0.1", expected: true},
+	{url: "https://127.0.0.1", expected: true},
+	{url: "http://[::1]", expected: true},
+	{url: "https://[::1]", expected: true},
+	{url: "http://localhost:8080", expected: true},
+	{url: "https://localhost:8443", expected: true},
+	{url: "http://example.com", expected: false},
+	{url: "https://example.com", expected: false},
+}
 
 func TestHelpers(t *testing.T) {
 	t.Run("statutes 2 subdivision chunks", func(t *testing.T) {
@@ -39,6 +54,14 @@ func TestHelpers(t *testing.T) {
 		for _, test := range chunkTests {
 			chunkID := ChunkObjectKeyToID(test.objectKey)
 			assert.Equal(t, test.chunkID, chunkID, "chunk ids not equal")
+		}
+	})
+
+	t.Run("IsLocalhostURL", func(t *testing.T) {
+
+		for _, tc := range isLocalhostURLTestCases {
+			result := IsLocalhostURL(tc.url)
+			assert.Equal(t, tc.expected, result, "unexpected result for URL: "+tc.url)
 		}
 	})
 }

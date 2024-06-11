@@ -3,12 +3,31 @@ package helpers
 import (
 	"code/core"
 	"encoding/base64"
+	"net"
+	"net/url"
 	"strings"
 )
 
-func IsLocalhostURL(url string) bool {
-	return strings.HasPrefix(url, "localhost") || strings.HasPrefix(url, "http://localhost") || strings.HasPrefix(url, "https://localhost")
+func IsLocalhostURL(inputURL string) bool {
+	parsedURL, err := url.Parse(inputURL)
+	if err != nil {
+		return false
+	}
 
+	hostname := parsedURL.Hostname()
+
+	// Check for localhost string
+	if hostname == "localhost" {
+		return true
+	}
+
+	// Check for IPv4 and IPv6 localhost addresses
+	ip := net.ParseIP(hostname)
+	if ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
 }
 
 func Base64Encode(content string) string {
